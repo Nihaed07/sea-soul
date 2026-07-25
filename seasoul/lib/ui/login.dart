@@ -8,7 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import '../services/api_service.dart';
 import '../constants/api_constants.dart';
-import '../services/google_signin_service.dart';
+import '../services/google_signin_service_v2.dart';
 
 
 class login extends StatefulWidget {
@@ -141,24 +141,39 @@ class _loginState extends State<login> {
     setState(() => _isGoogleLoading = true);
 
     try {
-      final result = await GoogleSignInService.signInWithBackend();
+      print('🔐 Initiating Google Sign-In...');
+      
+      final result = await GoogleSignInServiceV2.signInWithBackend();
 
       if (result == null) {
         setState(() => _isGoogleLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('❌ Google sign in failed. Please try again.'),
+            content: Text('❌ Google sign in cancelled or failed'),
             backgroundColor: Colors.orange,
           ),
         );
         return;
       }
 
-      print('✅ User signed in: ${result['email']}');
+      if (result['success'] == false) {
+        setState(() => _isGoogleLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ ${result['message'] ?? "Sign in failed"}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
+      print('✅ User signed in successfully!');
+      print('✅ Email: ${result['email']}');
       print('✅ Name: ${result['fullName']}');
-      print('✅ Token: ${result['token']}');
 
       await _saveUserData(result);
+
+      setState(() => _isGoogleLoading = false);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -176,9 +191,10 @@ class _loginState extends State<login> {
       }
     } catch (e) {
       setState(() => _isGoogleLoading = false);
+      print('❌ Error in _handleGoogleSignIn: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('❌ Error: ${e.toString()}'),
+          content: Text('❌ Sign in error: ${e.toString()}'),
           backgroundColor: Colors.red,
         ),
       );

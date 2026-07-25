@@ -16,7 +16,7 @@ const {
   resendOTP 
 } = require('../controllers/otpController');
 
-const { googleLogin } = require('../controllers/googleAuthController');
+const { googleLogin, googleEmailAuth } = require('../controllers/googleAuthController');
 const { protect } = require('../middleware/authMiddleware');
 
 // Test Route
@@ -40,5 +40,6 @@ router.post('/change-password', protect, changePassword);
 
 // Google Login
 router.post('/google', googleLogin);
+router.post('/google/email-auth', googleEmailAuth);
 
 module.exports = router;
