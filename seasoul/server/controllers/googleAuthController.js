@@ -268,3 +268,112 @@ exports.googleEmailAuth = async (req, res) => {
     });
   }
 };
+
+// ✅ Simple Google Authentication - Works with or without ID token
+exports.googleSimpleAuth = async (req, res) => {
+  try {
+    const { email, name, photoUrl, googleId, platform, idToken, accessToken } = req.body;
+
+    console.log('========================================');
+    console.log('🔐 Google Simple Authentication');
+    console.log(`📧 Email: ${email}`);
+    console.log(`👤 Name: ${name}`);
+    console.log(`📱 Platform: ${platform}`);
+    console.log(`🔑 Has ID Token: ${!!idToken}`);
+    console.log(`🔑 Has Access Token: ${!!accessToken}`);
+    console.log('========================================');
+
+    if (!email || !googleId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email and Google ID are required'
+      });
+    }
+
+    // Simple email validation
+    if (!email.includes('@')) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid email address'
+      });
+    }
+
+    // Find or create user
+    let user = await User.findOne({ email });
+
+    if (!user) {
+      console.log('📝 Creating new user...');
+
+      user = new User({
+        fullName: name || 'User',
+        email: email,
+        phone: '',
+        password: '',
+        profileImage: photoUrl || '',
+        bio: '',
+        location: '',
+        isGoogleUser: true,
+        googleId: googleId,
+        isActive: true,
+      });
+
+      await user.save();
+      console.log('✅ New user created');
+
+      try {
+        await sendWelcomeEmail(user);
+        console.log('✅ Welcome email sent');
+      } catch (emailError) {
+        console.log('⚠️ Failed to send welcome email:', emailError.message);
+      }
+
+    } else {
+      console.log('📝 Existing user found');
+
+      // Update user info
+      user.isGoogleUser = true;
+      if (!user.googleId) user.googleId = googleId;
+      if (!user.profileImage && photoUrl) user.profileImage = photoUrl;
+      if (name && !user.fullName) user.fullName = name;
+      
+      await user.save();
+      console.log('✅ User updated');
+    }
+
+    // Generate session token
+    const token = jwt.sign(
+      { id: user._id },
+      process.env.JWT_SECRET,
+      { expiresIn: '30d' }
+    );
+
+    console.log('✅ Simple Google Auth successful!');
+    console.log(`🆔 User ID: ${user._id}`);
+    console.log('========================================\n');
+
+    res.status(200).json({
+      success: true,
+      token: token,
+      user: {
+        _id: user._id,
+        fullName: user.fullName,
+        email: user.email,
+        phone: user.phone || '',
+        profileImage: user.profileImage || '',
+        bio: user.bio || '',
+        location: user.location || '',
+        role: user.role || 'user',
+        isGoogleUser: true,
+        isActive: true,
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Simple Google Auth error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Authentication failed',
+      error: error.message
+    });
+  }
+};

@@ -47,8 +47,8 @@ class GoogleSignInServiceV2 {
           'profile',
           'openid', // Required for ID token
         ],
-        // Force server auth code to get ID token
-        serverClientId: _clientId,
+        // serverClientId is NOT supported on web
+        signInOption: SignInOption.standard,
       );
     } else {
       return GoogleSignIn(
@@ -58,6 +58,8 @@ class GoogleSignInServiceV2 {
           'profile',
           'openid',
         ],
+        // Only for mobile platforms
+        serverClientId: _clientId,
       );
     }
   }

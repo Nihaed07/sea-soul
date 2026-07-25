@@ -8,7 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import '../services/api_service.dart';
 import '../constants/api_constants.dart';
-import '../services/google_signin_service_v2.dart';
+import '../services/google_signin_service_simple.dart';
 
 
 class login extends StatefulWidget {
@@ -143,7 +143,7 @@ class _loginState extends State<login> {
     try {
       print('🔐 Initiating Google Sign-In...');
       
-      final result = await GoogleSignInServiceV2.signInWithBackend();
+      final result = await GoogleSignInServiceSimple.signInWithBackend();
 
       if (result == null) {
         setState(() => _isGoogleLoading = false);
