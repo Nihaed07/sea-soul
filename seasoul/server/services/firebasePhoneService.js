@@ -33,7 +33,7 @@ class FirebasePhoneService {
           console.log('✅ Firebase Admin initialized with service account file');
         } else {
           // Option 2: Using environment variables
-          const projectId = process.env.FIREBASE_PROJECT_ID || 'seasoul-45bde';
+          const projectId = process.env.FIREBASE_PROJECT_ID || 'seasoul-4393e';
           const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
           const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
           
