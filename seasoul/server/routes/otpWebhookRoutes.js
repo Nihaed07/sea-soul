@@ -1,11 +1,17 @@
-// routes/otpWebhookRoutes.js - NEW
+// ⚠️ DEPRECATED - This file is no longer used
+// Migration to Firebase Phone Authentication completed
+// MSG91 webhooks are no longer needed with Firebase
+// See FIREBASE_SETUP.md for details
+
+// routes/otpWebhookRoutes.js - DEPRECATED - DO NOT USE
 const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
 const OTP = require('../models/OTP');
 
-// ✅ MSG91 Webhook endpoint
-// This receives events from MSG91 when OTP is sent, verified, etc.
+// ⚠️ DEPRECATED Webhook - No longer used with Firebase
+// ✅ MSG91 Webhook endpoint (DEPRECATED)
+// This received events from MSG91 when OTP is sent, verified, etc.
 router.post('/otp-webhook', async (req, res) => {
   try {
     console.log('📥 MSG91 Webhook Received:');

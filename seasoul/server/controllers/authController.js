@@ -1,8 +1,8 @@
-// controllers/authController.js - Complete Working Version
+// controllers/authController.js - Firebase Phone Authentication
 const User = require('../models/User');
 const OTP = require('../models/OTP');
 const jwt = require('jsonwebtoken');
-const msg91Service = require('../services/msg91Service');
+const firebasePhoneService = require('../services/firebasePhoneService');
 const { 
   sendPasswordResetOTPEmail, 
   sendPasswordChangedEmail,
@@ -240,7 +240,7 @@ exports.forgotPassword = async (req, res) => {
     const { phone } = req.body;
 
     console.log('========================================');
-    console.log('🔑 Forgot Password Request');
+    console.log('🔑 Forgot Password Request (Firebase)');
     console.log(`📱 Phone: ${phone}`);
     console.log('========================================');
 
@@ -275,32 +275,20 @@ exports.forgotPassword = async (req, res) => {
       });
     }
 
-    // ✅ Send OTP via MSG91 Service
-    console.log(`📱 Sending password reset OTP to: ${cleanPhone}`);
-    const result = await msg91Service.sendOTP(cleanPhone);
-    console.log('📥 MSG91 Result:', result);
-
-    if (!result.success) {
-      return res.status(500).json({
-        success: false,
-        message: 'Failed to send OTP. Please try again.',
-        error: result.error
-      });
-    }
-
-    // Store OTP in database
-    const otp = result.otp || generateOTP();
+    // ✅ Firebase handles OTP on client side
+    // Store a temporary marker for password reset
+    const resetToken = generateOTP();
     const otpExpiry = Date.now() + 10 * 60 * 1000;
 
-    user.resetPasswordOTP = otp;
+    user.resetPasswordOTP = resetToken;
     user.resetPasswordExpires = otpExpiry;
     await user.save();
 
-    console.log('✅ Password reset OTP sent to:', cleanPhone);
+    console.log('✅ Password reset ready for Firebase verification');
 
-    // ✅ Send confirmation email (NOT OTP - just notification)
+    // ✅ Send notification email (NOT OTP)
     try {
-      await sendPasswordResetOTPEmail(user.email, otp);
+      await sendPasswordResetOTPEmail(user.email, resetToken);
       console.log('✅ Password reset notification email sent to:', user.email);
     } catch (emailError) {
       console.log('⚠️ Email send failed:', emailError.message);
@@ -308,8 +296,8 @@ exports.forgotPassword = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: 'OTP sent to your phone',
-      method: result.method || 'msg91'
+      message: 'Ready for Firebase phone verification',
+      method: 'firebase'
     });
 
   } catch (error) {
@@ -325,18 +313,17 @@ exports.forgotPassword = async (req, res) => {
 // ==================== RESET PASSWORD ====================
 exports.resetPassword = async (req, res) => {
   try {
-    const { phone, otp, newPassword } = req.body;
+    const { phone, firebaseToken, newPassword } = req.body;
 
     console.log('========================================');
-    console.log('🔑 Reset Password Request');
+    console.log('🔑 Reset Password Request (Firebase)');
     console.log(`📱 Phone: ${phone}`);
-    console.log(`🔑 OTP: ${otp}`);
     console.log('========================================');
 
-    if (!phone || !otp || !newPassword) {
+    if (!phone || !firebaseToken || !newPassword) {
       return res.status(400).json({
         success: false,
-        message: 'Phone, OTP and new password are required'
+        message: 'Phone, Firebase token and new password are required'
       });
     }
 
@@ -349,48 +336,37 @@ exports.resetPassword = async (req, res) => {
 
     const cleanPhone = formatPhoneNumber(phone);
 
-    // ✅ Verify OTP using MSG91 Service
-    console.log(`🔍 Verifying OTP for: ${cleanPhone}`);
-    const verifyResult = await msg91Service.verifyOTP(cleanPhone, otp);
-    console.log('📥 MSG91 Verify Result:', verifyResult);
+    // ✅ Verify Firebase Token
+    console.log(`🔍 Verifying Firebase token for: ${cleanPhone}`);
+    const verifyResult = await firebasePhoneService.verifyPhoneToken(firebaseToken);
 
-    let user = null;
-
-    if (verifyResult.success) {
-      console.log('✅ MSG91 OTP verified for password reset');
-      
-      user = await User.findOne({
-        phone: cleanPhone,
-        resetPasswordOTP: otp,
-        resetPasswordExpires: { $gt: Date.now() }
+    if (!verifyResult.success) {
+      console.log('❌ Firebase verification failed');
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid phone verification'
       });
+    }
 
-      if (!user) {
-        // Try to find user by phone only
-        user = await User.findOne({ phone: cleanPhone });
-        if (!user) {
-          return res.status(400).json({
-            success: false,
-            message: 'User not found'
-          });
-        }
-      }
-    } else {
-      // ✅ Fallback: Check local database
-      console.log('⚠️ MSG91 verification failed, checking local DB...');
-      
-      user = await User.findOne({
-        phone: cleanPhone,
-        resetPasswordOTP: otp,
-        resetPasswordExpires: { $gt: Date.now() }
+    // Verify phone number matches
+    const firebasePhone = verifyResult.phoneNumber;
+    const phoneMatch = firebasePhone.includes(cleanPhone.substring(cleanPhone.length - 10));
+    
+    if (!phoneMatch) {
+      console.log('❌ Phone number mismatch');
+      return res.status(400).json({
+        success: false,
+        message: 'Phone number verification mismatch'
       });
+    }
 
-      if (!user) {
-        return res.status(400).json({
-          success: false,
-          message: 'Invalid or expired OTP'
-        });
-      }
+    // Find user by phone
+    const user = await User.findOne({ phone: cleanPhone });
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: 'User not found'
+      });
     }
 
     // ✅ Reset password
@@ -401,7 +377,7 @@ exports.resetPassword = async (req, res) => {
 
     console.log('✅ Password reset successfully for:', user.email);
 
-    // ✅ Send confirmation email (NOT OTP)
+    // ✅ Send confirmation email
     try {
       await sendPasswordChangedEmail(user.email);
       console.log('✅ Password change confirmation email sent to:', user.email);

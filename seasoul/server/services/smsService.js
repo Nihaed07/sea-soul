@@ -1,4 +1,11 @@
-// services/smsService.js - UPDATED
+// ⚠️ DEPRECATED - This file is no longer used
+// Migration to Firebase Phone Authentication completed
+// See FIREBASE_SETUP.md for details
+
+// services/smsService.js - DEPRECATED - DO NOT USE
+// This service has been replaced by Firebase Phone Authentication
+// Keep for reference only
+
 const msg91Service = require('./msg91Service');
 
 class SMSService {

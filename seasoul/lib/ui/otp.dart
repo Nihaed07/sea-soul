@@ -1,9 +1,10 @@
-// ui/otp.dart - COMPLETE FULL CODE
+// ui/otp.dart - Firebase Phone Authentication
 import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:seasoul/ui/signup.dart';
 import 'package:seasoul/ui/user_home.dart';
 import '../services/api_service.dart';
@@ -28,9 +29,13 @@ class OTPPage extends StatefulWidget {
 }
 
 class _OTPPageState extends State<OTPPage> {
-  static const int _otpLength = 4;
+  static const int _otpLength = 6;
   late List<FocusNode> _focusNodes;
   late List<TextEditingController> _controllers;
+
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  String? _verificationId;
+  int? _resendToken;
 
   Timer? _countdownTimer;
   int _secondsLeft = 59;
@@ -38,7 +43,6 @@ class _OTPPageState extends State<OTPPage> {
   bool _isLoading = false;
   bool _isVerifying = false;
   String _errorMessage = '';
-  bool _otpSent = false;
 
   @override
   void initState() {
@@ -75,6 +79,22 @@ class _OTPPageState extends State<OTPPage> {
     });
   }
 
+  String _formatPhoneForFirebase(String phone) {
+    String cleanPhone = phone.replaceAll(RegExp(r'\s'), '');
+    
+    // Remove country code if present
+    if (cleanPhone.startsWith('+91')) {
+      cleanPhone = cleanPhone.substring(3);
+    } else if (cleanPhone.startsWith('91') && cleanPhone.length > 10) {
+      cleanPhone = cleanPhone.substring(2);
+    } else if (cleanPhone.startsWith('0')) {
+      cleanPhone = cleanPhone.substring(1);
+    }
+    
+    // Add +91 country code
+    return '+91$cleanPhone';
+  }
+
   String _formatPhoneForDisplay(String phone) {
     if (phone.isEmpty) return '';
     if (phone.length == 10) {
@@ -86,44 +106,107 @@ class _OTPPageState extends State<OTPPage> {
   }
 
   Future<void> _sendInitialOTP() async {
-    if (_otpSent) return;
-    _otpSent = true;
+    if (_isLoading) return;
+    setState(() => _isLoading = true);
     
     try {
-      print('📤 Sending initial OTP...');
-      print('📱 Phone: ${widget.phone}');
+      final phoneNumber = _formatPhoneForFirebase(widget.phone);
+      print('📤 Sending Firebase OTP to: $phoneNumber');
       
-      final response = await ApiService.post(ApiConstants.sendOTP, {
-        'phone': widget.phone,
+      await _auth.verifyPhoneNumber(
+        phoneNumber: phoneNumber,
+        timeout: const Duration(seconds: 60),
+        verificationCompleted: (PhoneAuthCredential credential) async {
+          print('✅ Auto-verification completed');
+          await _handleAutoVerification(credential);
+        },
+        verificationFailed: (FirebaseAuthException e) {
+          print('❌ Verification failed: ${e.code} - ${e.message}');
+          setState(() {
+            _isLoading = false;
+            _errorMessage = _getFirebaseErrorMessage(e);
+          });
+          
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(_errorMessage),
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 4),
+            ),
+          );
+        },
+        codeSent: (String verificationId, int? resendToken) {
+          print('✅ OTP sent! Verification ID: $verificationId');
+          setState(() {
+            _verificationId = verificationId;
+            _resendToken = resendToken;
+            _isLoading = false;
+          });
+          
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('✅ OTP sent to your phone!'),
+              backgroundColor: Colors.green,
+              duration: Duration(seconds: 3),
+            ),
+          );
+        },
+        codeAutoRetrievalTimeout: (String verificationId) {
+          print('⏱️ Auto-retrieval timeout');
+          setState(() {
+            _verificationId = verificationId;
+          });
+        },
+      );
+    } catch (e) {
+      print('❌ Error sending OTP: $e');
+      setState(() {
+        _isLoading = false;
+        _errorMessage = 'Failed to send OTP: ${e.toString()}';
       });
       
-      print('📥 Initial OTP Response: $response');
-      
-      if (response['success'] == true) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('✅ OTP sent to your phone!'),
-            backgroundColor: Colors.green,
-            duration: Duration(seconds: 3),
-          ),
-        );
-      } else {
-        print('⚠️ OTP send failed: ${response['message']}');
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(response['message'] ?? 'Failed to send OTP'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } catch (e) {
-      print('⚠️ Initial OTP send error: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error: ${e.toString()}'),
           backgroundColor: Colors.red,
         ),
       );
+    }
+  }
+
+  Future<void> _handleAutoVerification(PhoneAuthCredential credential) async {
+    try {
+      print('🔄 Processing auto-verification...');
+      
+      // Sign in with credential
+      final userCredential = await _auth.signInWithCredential(credential);
+      final idToken = await userCredential.user?.getIdToken();
+      
+      if (idToken != null) {
+        await _registerUser(idToken);
+      }
+    } catch (e) {
+      print('❌ Auto-verification error: $e');
+      setState(() {
+        _errorMessage = 'Auto-verification failed: ${e.toString()}';
+      });
+    }
+  }
+
+  String _getFirebaseErrorMessage(FirebaseAuthException e) {
+    switch (e.code) {
+      case 'invalid-phone-number':
+        return 'Invalid phone number format';
+      case 'too-many-requests':
+        return 'Too many requests. Please try again later';
+      case 'quota-exceeded':
+        return 'SMS quota exceeded. Please try again later';
+      case 'invalid-verification-code':
+        return 'Invalid OTP. Please check and try again';
+      case 'session-expired':
+        return 'OTP expired. Please request a new one';
+      default:
+        return e.message ?? 'Verification failed';
     }
   }
 
@@ -140,7 +223,7 @@ class _OTPPageState extends State<OTPPage> {
   }
 
   void _verifyOTP() async {
-    if (_isLoading || _isVerifying) return;
+    if (_isLoading || _isVerifying || _verificationId == null) return;
 
     setState(() {
       _errorMessage = '';
@@ -153,11 +236,11 @@ class _OTPPageState extends State<OTPPage> {
 
     if (otp.length != _otpLength) {
       setState(() {
-        _errorMessage = 'Please enter complete 4-digit OTP';
+        _errorMessage = 'Please enter complete 6-digit OTP';
       });
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please enter complete 4-digit OTP'),
+          content: Text('Please enter complete 6-digit OTP'),
           backgroundColor: Colors.orange,
         ),
       );
@@ -167,20 +250,94 @@ class _OTPPageState extends State<OTPPage> {
     setState(() => _isVerifying = true);
 
     try {
-      final data = {
-        'phone': widget.phone,
-        'otp': otp,
-      };
-
-      print('📤 Verifying OTP...');
-      print('📱 Phone: ${widget.phone}');
-      print('🔑 OTP: $otp');
+      print('📤 Verifying OTP: $otp');
+      print('🔑 Verification ID: $_verificationId');
       
-      final verifyResponse = await ApiService.post(ApiConstants.verifyOTP, data);
+      // Create credential with OTP
+      final credential = PhoneAuthProvider.credential(
+        verificationId: _verificationId!,
+        smsCode: otp,
+      );
+
+      // Sign in with credential
+      final userCredential = await _auth.signInWithCredential(credential);
+      print('✅ Firebase authentication successful');
+      
+      // Get ID token
+      final idToken = await userCredential.user?.getIdToken();
+      
+      if (idToken == null) {
+        throw Exception('Failed to get authentication token');
+      }
+
+      print('✅ Got Firebase ID token');
+      await _registerUser(idToken);
+
+    } on FirebaseAuthException catch (e) {
+      print('❌ Firebase Auth Error: ${e.code} - ${e.message}');
+      
+      String errorMessage = _getFirebaseErrorMessage(e);
+      
+      setState(() {
+        _errorMessage = errorMessage;
+      });
+      
+      if (e.code == 'invalid-verification-code') {
+        for (var controller in _controllers) {
+          controller.clear();
+        }
+        _focusNodes[0].requestFocus();
+      } else if (e.code == 'session-expired') {
+        _resendOTP();
+      }
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errorMessage),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    } catch (e) {
+      print('❌ Error: $e');
+      
+      String errorMessage = e.toString().replaceAll('Exception: ', '');
+      
+      setState(() {
+        _errorMessage = errorMessage;
+      });
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errorMessage),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isVerifying = false);
+    }
+  }
+
+  Future<void> _registerUser(String firebaseToken) async {
+    try {
+      print('📤 Registering user with Firebase token...');
+      
+      // Verify with backend
+      final verifyData = {
+        'phone': widget.phone,
+        'firebaseToken': firebaseToken,
+      };
+      
+      final verifyResponse = await ApiService.post(ApiConstants.verifyOTP, verifyData);
       print('📥 Verify Response: $verifyResponse');
 
       if (verifyResponse['success'] == true && verifyResponse['verified'] == true) {
-        print('✅ OTP Verified! Registering user...');
+        print('✅ Backend verified! Registering user...');
 
         final registerData = {
           'fullName': widget.fullName,
@@ -226,39 +383,11 @@ class _OTPPageState extends State<OTPPage> {
           throw Exception(registerResponse['message'] ?? 'Registration failed');
         }
       } else {
-        throw Exception(verifyResponse['message'] ?? 'OTP verification failed');
+        throw Exception(verifyResponse['message'] ?? 'Verification failed');
       }
     } catch (e) {
-      print('❌ Error: $e');
-      
-      String errorMessage = e.toString().replaceAll('Exception: ', '');
-      
-      if (errorMessage.toLowerCase().contains('expired')) {
-        errorMessage = 'OTP has expired. Please request a new one.';
-        _resendOTP();
-      } else if (errorMessage.toLowerCase().contains('invalid')) {
-        errorMessage = 'Invalid OTP. Please check and try again.';
-        for (var controller in _controllers) {
-          controller.clear();
-        }
-        _focusNodes[0].requestFocus();
-      }
-      
-      setState(() {
-        _errorMessage = errorMessage;
-      });
-      
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(errorMessage),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 3),
-          ),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _isVerifying = false);
+      print('❌ Registration error: $e');
+      throw e;
     }
   }
 
@@ -271,43 +400,70 @@ class _OTPPageState extends State<OTPPage> {
     });
 
     try {
-      final data = {
-        'phone': widget.phone,
-      };
+      final phoneNumber = _formatPhoneForFirebase(widget.phone);
+      print('📤 Resending Firebase OTP to: $phoneNumber');
       
-      print('📤 Resending OTP...');
-      print('📱 Phone: ${widget.phone}');
-      
-      final response = await ApiService.post(ApiConstants.resendOTP, data);
-      print('📥 Resend Response: $response');
-
-      if (response['success'] == true) {
-        for (var controller in _controllers) {
-          controller.clear();
-        }
-        _focusNodes[0].requestFocus();
-        _startTimer();
-        
-        print('✅ OTP resent successfully');
-        
-        if (mounted) {
+      await _auth.verifyPhoneNumber(
+        phoneNumber: phoneNumber,
+        timeout: const Duration(seconds: 60),
+        forceResendingToken: _resendToken,
+        verificationCompleted: (PhoneAuthCredential credential) async {
+          print('✅ Auto-verification completed on resend');
+          await _handleAutoVerification(credential);
+        },
+        verificationFailed: (FirebaseAuthException e) {
+          print('❌ Resend verification failed: ${e.code}');
+          setState(() {
+            _isLoading = false;
+            _errorMessage = _getFirebaseErrorMessage(e);
+          });
+          
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('✅ OTP resent successfully!'),
-              backgroundColor: Colors.green,
-              duration: Duration(seconds: 3),
+            SnackBar(
+              content: Text(_errorMessage),
+              backgroundColor: Colors.red,
             ),
           );
-        }
-      } else {
-        throw Exception(response['message'] ?? 'Failed to resend OTP');
-      }
+        },
+        codeSent: (String verificationId, int? resendToken) {
+          print('✅ OTP resent! New Verification ID: $verificationId');
+          setState(() {
+            _verificationId = verificationId;
+            _resendToken = resendToken;
+            _isLoading = false;
+          });
+          
+          for (var controller in _controllers) {
+            controller.clear();
+          }
+          _focusNodes[0].requestFocus();
+          _startTimer();
+          
+          print('✅ OTP resent successfully');
+          
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('✅ OTP resent successfully!'),
+                backgroundColor: Colors.green,
+                duration: Duration(seconds: 3),
+              ),
+            );
+          }
+        },
+        codeAutoRetrievalTimeout: (String verificationId) {
+          setState(() {
+            _verificationId = verificationId;
+          });
+        },
+      );
     } catch (e) {
       print('❌ Resend OTP Error: $e');
       
       String errorMessage = e.toString().replaceAll('Exception: ', '');
       setState(() {
         _errorMessage = errorMessage;
+        _isLoading = false;
       });
       
       if (mounted) {
@@ -319,8 +475,6 @@ class _OTPPageState extends State<OTPPage> {
           ),
         );
       }
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -472,7 +626,7 @@ class _OTPPageState extends State<OTPPage> {
                             color: colorOnSurfaceVariant,
                           ),
                           children: [
-                            const TextSpan(text: "We've sent a 4-digit code to "),
+                            const TextSpan(text: "We've sent a 6-digit code to "),
                             TextSpan(
                               text: displayPhone,
                               style: const TextStyle(
@@ -610,8 +764,8 @@ class _OTPPageState extends State<OTPPage> {
 
   Widget _buildOtpField(int index, Color activeAccent) {
     return SizedBox(
-      width: 72,
-      height: 88,
+      width: 52,
+      height: 72,
       child: ClipRRect(
         borderRadius: BorderRadius.circular(12),
         child: BackdropFilter(
@@ -626,7 +780,7 @@ class _OTPPageState extends State<OTPPage> {
             showCursor: false,
             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
             style: GoogleFonts.montserrat(
-              fontSize: 36,
+              fontSize: 28,
               fontWeight: FontWeight.w700,
               color: activeAccent,
             ),

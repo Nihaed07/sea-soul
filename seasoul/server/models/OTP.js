@@ -28,6 +28,11 @@ const OTPSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    // Firebase Phone Authentication support
+    firebaseUid: {
+      type: String,
+      trim: true,
+    },
   },
   { timestamps: true }
 );

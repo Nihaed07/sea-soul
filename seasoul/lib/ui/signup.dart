@@ -135,12 +135,12 @@ class _SignupPageState extends State<SignupPage> {
     setState(() => _isLoading = true);
 
     try {
-      // ✅ Send OTP - Phone ONLY
+      // ✅ Check if phone is already registered
       final data = {
         'phone': cleanPhone,
       };
       
-      print('📤 Sending OTP to phone: $cleanPhone');
+      print('📤 Checking phone availability: $cleanPhone');
       
       final response = await ApiService.post(ApiConstants.sendOTP, data);
       print('📱 API Response: $response');
@@ -164,14 +164,8 @@ class _SignupPageState extends State<SignupPage> {
         return;
       }
 
-      // ✅ Success - OTP sent
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('✅ 4-digit OTP sent to your phone!'),
-          backgroundColor: Colors.green,
-          duration: Duration(seconds: 3),
-        ),
-      );
+      // ✅ Success - proceed to OTP verification with Firebase
+      print('✅ Phone number available, proceeding to Firebase OTP...');
 
       if (mounted) {
         Navigator.push(

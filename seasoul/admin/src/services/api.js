@@ -37,7 +37,9 @@ api.interceptors.response.use(
   }
 );
 
-// ✅ Webhook URL for MSG91 - Add this to your MSG91 widget settings
-export const MSG91_WEBHOOK_URL = 'https://sea-soul-backend.vercel.app/api/otp-webhook';
+// ⚠️ DEPRECATED - Firebase Phone Auth replaces this
+// ✅ Webhook URL for Firebase - No longer needed
+// Firebase handles OTP verification on client side and backend verifies ID tokens
+// export const FIREBASE_PHONE_AUTH_INFO = 'Phone authentication handled by Firebase SDK';
 
 export default api;

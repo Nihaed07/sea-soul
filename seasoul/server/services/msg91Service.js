@@ -1,4 +1,11 @@
-// services/msg91Service.js - DIRECT SMS API ONLY
+// ⚠️ DEPRECATED - This file is no longer used
+// Migration to Firebase Phone Authentication completed
+// See FIREBASE_SETUP.md for details
+
+// services/msg91Service.js - DEPRECATED - DO NOT USE
+// This service has been replaced by Firebase Phone Authentication
+// Keep for reference only
+
 const axios = require('axios');
 require('dotenv').config();
 

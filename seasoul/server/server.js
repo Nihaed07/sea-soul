@@ -87,9 +87,6 @@ const reviewRoutes = require('./routes/reviewRoutes');
 const categoryRoutes = require('./routes/categoryRoutes');
 const razorpayRoutes = require('./routes/razorpayRoutes');
 
-// ✅ Import MSG91 Webhook Routes
-const otpWebhookRoutes = require('./routes/otpWebhookRoutes');
-
 // ✅ API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api', productRoutes);
@@ -104,10 +101,6 @@ app.use('/api/categories', categoryRoutes);
 
 // ✅ Razorpay Routes
 app.use('/api/razorpay', razorpayRoutes);
-
-
-// ✅ ADD - MSG91 Webhook Routes
-app.use('/api', otpWebhookRoutes);
 
 // ==================== HEALTH CHECK ENDPOINTS ====================
 

@@ -1,7 +1,7 @@
-// controllers/otpController.js
+// controllers/otpController.js - Firebase Phone Authentication
 const OTP = require('../models/OTP');
 const User = require('../models/User');
-const msg91Service = require('../services/msg91Service');
+const firebasePhoneService = require('../services/firebasePhoneService');
 require('dotenv').config();
 
 const formatPhoneNumber = (phone) => {
@@ -25,7 +25,7 @@ exports.sendOTP = async (req, res) => {
     const { phone } = req.body;
 
     console.log('========================================');
-    console.log('📧 Send OTP Request');
+    console.log('📧 Send OTP Request (Firebase)');
     console.log(`📱 Phone: ${phone}`);
     console.log('========================================');
 
@@ -60,40 +60,16 @@ exports.sendOTP = async (req, res) => {
       });
     }
 
-    // ✅ Delete old OTPs
-    await OTP.deleteMany({ phone: cleanPhone });
-
-    // ✅ Send OTP via Direct SMS
-    console.log(`📱 Sending OTP to: ${cleanPhone}`);
-    const result = await msg91Service.sendOTP(cleanPhone);
-    console.log('📥 MSG91 Result:', result);
-
-    if (!result.success) {
-      return res.status(500).json({
-        success: false,
-        message: result.error || 'Failed to send OTP. Please try again.'
-      });
-    }
-
-    // ✅ Store OTP in database
-    const otp = result.otp;
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
-
-    await OTP.create({
-      phone: cleanPhone,
-      otp: otp,
-      expiresAt: expiresAt,
-      verified: false,
-      isDemo: false
-    });
-
-    console.log(`✅ OTP stored in database: ${otp}`);
+    // ✅ Firebase handles OTP sending on client side
+    // Backend just acknowledges the request
+    console.log(`✅ Phone number validated: ${cleanPhone}`);
+    console.log('📱 Client will handle Firebase Phone Authentication');
 
     res.status(200).json({
       success: true,
-      message: 'OTP sent to your phone',
+      message: 'Ready for Firebase Phone Authentication',
       phone: cleanPhone,
-      method: result.method || 'direct'
+      method: 'firebase'
     });
 
   } catch (error) {
@@ -108,57 +84,66 @@ exports.sendOTP = async (req, res) => {
 
 exports.verifyOTP = async (req, res) => {
   try {
-    const { phone, otp } = req.body;
+    const { phone, firebaseToken } = req.body;
 
     console.log('========================================');
-    console.log('🔍 Verifying OTP');
+    console.log('🔍 Verifying Firebase Phone Token');
     console.log(`📱 Phone: ${phone}`);
-    console.log(`🔑 OTP: ${otp}`);
     console.log('========================================');
 
-    if (!otp) {
+    if (!firebaseToken) {
       return res.status(400).json({
         success: false,
-        message: 'OTP is required'
+        message: 'Firebase token is required'
       });
     }
 
     const cleanPhone = formatPhoneNumber(phone);
 
-    // ✅ Check database
-    const otpRecord = await OTP.findOne({
+    // ✅ Verify Firebase ID Token
+    console.log('🔍 Verifying with Firebase...');
+    const verifyResult = await firebasePhoneService.verifyPhoneToken(firebaseToken);
+
+    if (!verifyResult.success) {
+      console.log('❌ Firebase verification failed');
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid phone verification. Please try again.'
+      });
+    }
+
+    // Extract phone number from Firebase token
+    const firebasePhone = verifyResult.phoneNumber;
+    console.log(`✅ Firebase verified phone: ${firebasePhone}`);
+
+    // Check if phone matches
+    const phoneMatch = firebasePhone.includes(cleanPhone.substring(cleanPhone.length - 10));
+    if (!phoneMatch) {
+      console.log('❌ Phone number mismatch');
+      return res.status(400).json({
+        success: false,
+        message: 'Phone number verification mismatch'
+      });
+    }
+
+    // ✅ Store verification record
+    await OTP.deleteMany({ phone: cleanPhone });
+    await OTP.create({
       phone: cleanPhone,
-      otp: otp,
-      verified: false
+      otp: 'firebase-verified',
+      expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+      verified: true,
+      isDemo: false,
+      firebaseUid: verifyResult.uid
     });
 
-    if (!otpRecord) {
-      console.log('❌ Invalid OTP');
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid OTP. Please check and try again.'
-      });
-    }
-
-    if (new Date() > otpRecord.expiresAt) {
-      await OTP.deleteOne({ _id: otpRecord._id });
-      console.log('❌ OTP Expired');
-      return res.status(400).json({
-        success: false,
-        message: 'OTP expired. Please request a new one.'
-      });
-    }
-
-    // ✅ Mark as verified
-    otpRecord.verified = true;
-    await otpRecord.save();
-
-    console.log('✅ OTP Verified Successfully!');
+    console.log('✅ Phone Verified Successfully with Firebase!');
 
     res.status(200).json({
       success: true,
-      message: 'OTP verified successfully',
-      verified: true
+      message: 'Phone verified successfully',
+      verified: true,
+      firebaseUid: verifyResult.uid
     });
 
   } catch (error) {
@@ -184,36 +169,15 @@ exports.resendOTP = async (req, res) => {
 
     const cleanPhone = formatPhoneNumber(phone);
 
-    // ✅ Delete old OTPs
-    await OTP.deleteMany({ phone: cleanPhone });
+    console.log(`📱 Resend OTP request for: ${cleanPhone}`);
+    console.log('✅ Client will handle Firebase Phone Authentication resend');
 
-    // ✅ Resend OTP
-    const result = await msg91Service.resendOTP(cleanPhone);
-
-    if (!result.success) {
-      return res.status(500).json({
-        success: false,
-        message: 'Failed to resend OTP. Please try again.'
-      });
-    }
-
-    const otp = result.otp;
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
-
-    await OTP.create({
-      phone: cleanPhone,
-      otp: otp,
-      expiresAt: expiresAt,
-      verified: false,
-      isDemo: false
-    });
-
-    console.log(`✅ OTP resent: ${otp}`);
-
+    // ✅ Firebase handles resend on client side
     res.status(200).json({
       success: true,
-      message: 'OTP resent successfully',
-      phone: cleanPhone
+      message: 'Ready to resend OTP via Firebase',
+      phone: cleanPhone,
+      method: 'firebase'
     });
 
   } catch (error) {
