@@ -3,31 +3,13 @@ import { useParams, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
 
-<<<<<<< HEAD
-// ✅ Available Material Icons - Expanded Collection
-=======
 // ✅ Available Material Icons (same as before)
->>>>>>> 5192d474cadff7e77b099b2bda5cfc0dcd24fd38
 const AVAILABLE_ICONS = [
   // Home & Accommodation
   { name: 'home', label: 'Home' },
   { name: 'home_work', label: 'Home Work' },
   { name: 'home_repair_service', label: 'Home Repair' },
   { name: 'house', label: 'House' },
-<<<<<<< HEAD
-  { name: 'cottage', label: 'Cottage' },
-  { name: 'cabin', label: 'Cabin' },
-  { name: 'bed', label: 'Bed' },
-  { name: 'hotel', label: 'Hotel' },
-  { name: 'villa', label: 'Villa' },
-  { name: 'apartment', label: 'Apartment' },
-  { name: 'night_shelter', label: 'Night Shelter' },
-  { name: 'holiday_village', label: 'Holiday Village' },
-  { name: 'bungalow', label: 'Bungalow' },
-  { name: 'roofing', label: 'Roofing' },
-  { name: 'king_bed', label: 'King Bed' },
-  { name: 'single_bed', label: 'Single Bed' },
-=======
   { name: 'house_outlined', label: 'House Outlined' },
   { name: 'cottage', label: 'Cottage' },
   { name: 'cottage_outlined', label: 'Cottage Outlined' },
@@ -41,7 +23,6 @@ const AVAILABLE_ICONS = [
   { name: 'holiday_village', label: 'Holiday Village' },
   { name: 'hiking', label: 'Hiking' },
   { name: 'camping', label: 'Camping' },
->>>>>>> 5192d474cadff7e77b099b2bda5cfc0dcd24fd38
   
   // Transportation
   { name: 'car_rental', label: 'Car Rental' },
@@ -49,31 +30,6 @@ const AVAILABLE_ICONS = [
   { name: 'moped', label: 'Moped' },
   { name: 'electric_moped', label: 'Electric Moped' },
   { name: 'motorcycle', label: 'Motorcycle' },
-<<<<<<< HEAD
-  { name: 'electric_bike', label: 'Electric Bike' },
-  { name: 'pedal_bike', label: 'Pedal Bike' },
-  { name: 'directions_bike', label: 'Bicycle' },
-  { name: 'directions_car', label: 'Car' },
-  { name: 'two_wheeler', label: 'Two Wheeler' },
-  { name: 'airport_shuttle', label: 'Airport Shuttle' },
-  { name: 'directions_bus', label: 'Bus' },
-  { name: 'train', label: 'Train' },
-  { name: 'tram', label: 'Tram' },
-  { name: 'subway', label: 'Subway' },
-  { name: 'flight', label: 'Flight' },
-  { name: 'flight_takeoff', label: 'Takeoff' },
-  { name: 'flight_land', label: 'Landing' },
-  { name: 'directions_boat', label: 'Boat' },
-  { name: 'sailing', label: 'Sailing' },
-  { name: 'ferry', label: 'Ferry' },
-  { name: 'paragliding', label: 'Paragliding' },
-  
-  // Water Sports & Beach
-  { name: 'scuba_diving', label: 'Scuba Diving' },
-  { name: 'surfing', label: 'Surfing' },
-  { name: 'kitesurfing', label: 'Kitesurfing' },
-  { name: 'kayaking', label: 'Kayaking' },
-=======
   { name: 'directions_bike', label: 'Bicycle' },
   { name: 'directions_car', label: 'Car' },
   { name: 'two_wheeler', label: 'Two Wheeler' },
@@ -89,30 +45,15 @@ const AVAILABLE_ICONS = [
   { name: 'surfing', label: 'Surfing' },
   { name: 'kayaking', label: 'Kayaking' },
   { name: 'snowboarding', label: 'Snowboarding' },
->>>>>>> 5192d474cadff7e77b099b2bda5cfc0dcd24fd38
   { name: 'pool', label: 'Pool' },
   { name: 'water', label: 'Water' },
   { name: 'waves', label: 'Waves' },
   { name: 'beach_access', label: 'Beach' },
-<<<<<<< HEAD
-  { name: 'umbrella', label: 'Umbrella' },
-  { name: 'water_drop', label: 'Water Drop' },
-  
-  // Winter & Snow Sports
-  { name: 'snowboarding', label: 'Snowboarding' },
-  { name: 'downhill_skiing', label: 'Skiing' },
-  { name: 'ac_unit', label: 'Snowflake' },
-  
-  // Food & Dining
-  { name: 'restaurant', label: 'Restaurant' },
-  { name: 'restaurant_menu', label: 'Menu' },
-=======
   { name: 'beach_umbrella', label: 'Beach Umbrella' },
   
   // Food & Dining
   { name: 'restaurant', label: 'Restaurant' },
   { name: 'restaurant_menu', label: 'Restaurant Menu' },
->>>>>>> 5192d474cadff7e77b099b2bda5cfc0dcd24fd38
   { name: 'ramen_dining', label: 'Ramen' },
   { name: 'dinner_dining', label: 'Dinner' },
   { name: 'lunch_dining', label: 'Lunch' },
@@ -122,86 +63,13 @@ const AVAILABLE_ICONS = [
   { name: 'food_bank', label: 'Food Bank' },
   { name: 'room_service', label: 'Room Service' },
   { name: 'free_breakfast', label: 'Free Breakfast' },
-<<<<<<< HEAD
-  { name: 'local_cafe', label: 'Cafe' },
-  { name: 'local_bar', label: 'Bar' },
-  { name: 'local_pizza', label: 'Pizza' },
-  { name: 'icecream', label: 'Ice Cream' },
-  { name: 'cake', label: 'Cake' },
-  { name: 'coffee', label: 'Coffee' },
-  { name: 'wine_bar', label: 'Wine Bar' },
-  { name: 'liquor', label: 'Liquor' },
-  { name: 'tapas', label: 'Tapas' },
-  { name: 'egg', label: 'Egg' },
-  { name: 'set_meal', label: 'Set Meal' },
-  { name: 'soup_kitchen', label: 'Soup' },
-  
-  // Shopping & Products
-=======
   
   // Shopping
->>>>>>> 5192d474cadff7e77b099b2bda5cfc0dcd24fd38
   { name: 'shopping_bag', label: 'Shopping Bag' },
   { name: 'shopping_cart', label: 'Shopping Cart' },
   { name: 'local_mall', label: 'Mall' },
   { name: 'storefront', label: 'Storefront' },
   { name: 'store', label: 'Store' },
-<<<<<<< HEAD
-  { name: 'local_convenience_store', label: 'Convenience' },
-  { name: 'local_grocery_store', label: 'Grocery' },
-  { name: 'local_offer', label: 'Offer' },
-  { name: 'card_giftcard', label: 'Gift Card' },
-  { name: 'redeem', label: 'Redeem' },
-  { name: 'checkroom', label: 'Checkroom' },
-  { name: 'handyman', label: 'Handyman' },
-  { name: 'build', label: 'Build' },
-  { name: 'construction', label: 'Construction' },
-  { name: 'design_services', label: 'Design' },
-  { name: 'palette', label: 'Palette' },
-  { name: 'brush', label: 'Brush' },
-  { name: 'auto_awesome', label: 'Awesome' },
-  
-  // Events & Entertainment
-  { name: 'event', label: 'Event' },
-  { name: 'event_available', label: 'Event Available' },
-  { name: 'celebration', label: 'Celebration' },
-  { name: 'festival', label: 'Festival' },
-  { name: 'party_mode', label: 'Party' },
-  { name: 'music_note', label: 'Music' },
-  { name: 'audiotrack', label: 'Audio' },
-  { name: 'headphones', label: 'Headphones' },
-  { name: 'piano', label: 'Piano' },
-  { name: 'theaters', label: 'Theater' },
-  { name: 'movie', label: 'Movie' },
-  { name: 'local_movies', label: 'Cinema' },
-  { name: 'video_library', label: 'Video Library' },
-  { name: 'live_tv', label: 'Live TV' },
-  { name: 'casino', label: 'Casino' },
-  { name: 'attractions', label: 'Attractions' },
-  
-  // Sports & Fitness
-  { name: 'sports', label: 'Sports' },
-  { name: 'sports_baseball', label: 'Baseball' },
-  { name: 'sports_basketball', label: 'Basketball' },
-  { name: 'sports_cricket', label: 'Cricket' },
-  { name: 'sports_football', label: 'Football' },
-  { name: 'sports_soccer', label: 'Soccer' },
-  { name: 'sports_tennis', label: 'Tennis' },
-  { name: 'sports_volleyball', label: 'Volleyball' },
-  { name: 'sports_golf', label: 'Golf' },
-  { name: 'sports_hockey', label: 'Hockey' },
-  { name: 'sports_rugby', label: 'Rugby' },
-  { name: 'sports_handball', label: 'Handball' },
-  { name: 'sports_kabaddi', label: 'Kabaddi' },
-  { name: 'sports_martial_arts', label: 'Martial Arts' },
-  { name: 'sports_mma', label: 'MMA' },
-  { name: 'sports_gymnastics', label: 'Gymnastics' },
-  { name: 'fitness_center', label: 'Fitness' },
-  { name: 'spa', label: 'Spa' },
-  { name: 'hot_tub', label: 'Hot Tub' },
-  
-  // Nature & Outdoor
-=======
   { name: 'shop', label: 'Shop' },
   { name: 'local_offer', label: 'Offer' },
   { name: 'card_giftcard', label: 'Gift Card' },
@@ -224,106 +92,10 @@ const AVAILABLE_ICONS = [
   { name: 'sports_volleyball', label: 'Volleyball' },
   
   // Nature
->>>>>>> 5192d474cadff7e77b099b2bda5cfc0dcd24fd38
   { name: 'nature', label: 'Nature' },
   { name: 'nature_people', label: 'Nature People' },
   { name: 'park', label: 'Park' },
   { name: 'forest', label: 'Forest' },
-<<<<<<< HEAD
-  { name: 'grass', label: 'Grass' },
-  { name: 'eco', label: 'Eco' },
-  { name: 'yard', label: 'Yard' },
-  { name: 'local_florist', label: 'Florist' },
-  { name: 'terrain', label: 'Terrain' },
-  { name: 'landscape', label: 'Landscape' },
-  { name: 'emoji_nature', label: 'Nature Emoji' },
-  { name: 'agriculture', label: 'Agriculture' },
-  
-  // Activities & Adventure
-  { name: 'hiking', label: 'Hiking' },
-  { name: 'camping', label: 'Camping' },
-  { name: 'outdoor_grill', label: 'BBQ' },
-  { name: 'fireplace', label: 'Fireplace' },
-  { name: 'directions_run', label: 'Running' },
-  { name: 'directions_walk', label: 'Walking' },
-  { name: 'nordic_walking', label: 'Nordic Walking' },
-  { name: 'golf_course', label: 'Golf Course' },
-  { name: 'roller_skating', label: 'Roller Skating' },
-  { name: 'skateboarding', label: 'Skateboarding' },
-  
-  // Animals & Wildlife
-  { name: 'pets', label: 'Pets' },
-  { name: 'cruelty_free', label: 'Cruelty Free' },
-  
-  // Travel & Tourism
-  { name: 'luggage', label: 'Luggage' },
-  { name: 'backpack', label: 'Backpack' },
-  { name: 'explore', label: 'Explore' },
-  { name: 'tour', label: 'Tour' },
-  { name: 'map', label: 'Map' },
-  { name: 'location_on', label: 'Location' },
-  { name: 'place', label: 'Place' },
-  { name: 'pin_drop', label: 'Pin Drop' },
-  { name: 'push_pin', label: 'Push Pin' },
-  { name: 'flag', label: 'Flag' },
-  { name: 'emoji_flags', label: 'Flags' },
-  { name: 'public', label: 'Public' },
-  { name: 'travel_explore', label: 'Travel Explore' },
-  
-  // Photography & Media
-  { name: 'camera_alt', label: 'Camera' },
-  { name: 'photo_camera', label: 'Photo Camera' },
-  { name: 'photo', label: 'Photo' },
-  { name: 'photo_library', label: 'Photo Library' },
-  { name: 'image', label: 'Image' },
-  { name: 'collections', label: 'Collections' },
-  { name: 'photo_album', label: 'Album' },
-  { name: 'videocam', label: 'Video' },
-  
-  // Services & Utilities
-  { name: 'local_laundry_service', label: 'Laundry' },
-  { name: 'local_shipping', label: 'Shipping' },
-  { name: 'delivery_dining', label: 'Delivery' },
-  { name: 'cleaning_services', label: 'Cleaning' },
-  { name: 'plumbing', label: 'Plumbing' },
-  { name: 'electrical_services', label: 'Electrical' },
-  { name: 'hvac', label: 'HVAC' },
-  { name: 'pest_control', label: 'Pest Control' },
-  { name: 'miscellaneous_services', label: 'Services' },
-  
-  // Health & Wellness
-  { name: 'favorite', label: 'Favorite' },
-  { name: 'health_and_safety', label: 'Health & Safety' },
-  { name: 'medical_services', label: 'Medical' },
-  { name: 'local_hospital', label: 'Hospital' },
-  { name: 'local_pharmacy', label: 'Pharmacy' },
-  { name: 'healing', label: 'Healing' },
-  { name: 'self_improvement', label: 'Self Improvement' },
-  { name: 'psychology', label: 'Psychology' },
-  { name: 'mood', label: 'Mood' },
-  { name: 'sentiment_satisfied', label: 'Satisfied' },
-  
-  // Miscellaneous
-  { name: 'star', label: 'Star' },
-  { name: 'star_border', label: 'Star Border' },
-  { name: 'grade', label: 'Grade' },
-  { name: 'emoji_emotions', label: 'Emoji' },
-  { name: 'emoji_events', label: 'Trophy' },
-  { name: 'military_tech', label: 'Medal' },
-  { name: 'workspace_premium', label: 'Premium' },
-  { name: 'verified', label: 'Verified' },
-  { name: 'new_releases', label: 'New' },
-  { name: 'tips_and_updates', label: 'Tips' },
-  { name: 'lightbulb', label: 'Lightbulb' },
-  { name: 'wb_sunny', label: 'Sunny' },
-  { name: 'wb_twilight', label: 'Twilight' },
-  { name: 'nightlight', label: 'Nightlight' },
-  { name: 'category', label: 'Category' },
-  { name: 'apps', label: 'Apps' },
-  { name: 'dashboard', label: 'Dashboard' },
-  { name: 'view_module', label: 'Module' },
-  { name: 'widgets', label: 'Widgets' },
-=======
   { name: 'palmtree', label: 'Palm Tree' },
   { name: 'flower', label: 'Flower' },
   { name: 'butterfly', label: 'Butterfly' },
@@ -353,7 +125,6 @@ const AVAILABLE_ICONS = [
   { name: 'local_shipping', label: 'Shipping' },
   { name: 'delivery_dining', label: 'Delivery' },
   { name: 'cleaning_services', label: 'Cleaning' },
->>>>>>> 5192d474cadff7e77b099b2bda5cfc0dcd24fd38
 ];
 
 const COLOR_OPTIONS = [
