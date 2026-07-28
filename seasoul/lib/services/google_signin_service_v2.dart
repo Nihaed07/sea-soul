@@ -39,30 +39,27 @@ class GoogleSignInServiceV2 {
 
   // ✅ Configure GoogleSignIn to request ID token
   static GoogleSignIn get _googleSignIn {
-    if (kIsWeb) {
-      return GoogleSignIn(
-        clientId: _clientId,
-        scopes: [
-          'email',
-          'profile',
-          'openid', // Required for ID token
-        ],
-        // serverClientId is NOT supported on web
-        signInOption: SignInOption.standard,
-      );
-    } else {
-      return GoogleSignIn(
-        clientId: _clientId,
-        scopes: [
-          'email',
-          'profile',
-          'openid',
-        ],
-        // Only for mobile platforms
-        serverClientId: _clientId,
-      );
-    }
+  if (kIsWeb) {
+    return GoogleSignIn(
+      clientId: _webClientId,
+      scopes: const [
+        'email',
+        'profile',
+        'openid',
+      ],
+      signInOption: SignInOption.standard,
+    );
+  } else {
+    return GoogleSignIn(
+      scopes: const [
+        'email',
+        'profile',
+        'openid',
+      ],
+      serverClientId: _webClientId,
+    );
   }
+}
 
   /// ✅ Improved sign-in with proper ID token handling
   static Future<Map<String, dynamic>?> signInWithBackend() async {

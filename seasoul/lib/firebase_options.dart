@@ -56,7 +56,6 @@ class DefaultFirebaseOptions {
     projectId: 'seasoul-4393e',
     storageBucket: 'seasoul-4393e.firebasestorage.app',
   );
-
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyDtf7i2LgpWlZFFwHiWYOA8a8hUQERHsNU',
     appId: '1:1006516793076:ios:e9cd8921e22649e1c138a1',
