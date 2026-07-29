@@ -21,18 +21,28 @@ class GoogleSignInServiceSimple {
     return ApiConstants.baseUrl;
   }
 
-  // ✅ Simple GoogleSignIn configuration
+  // ✅ FIXED: GoogleSignIn configuration with serverClientId for Android
   static GoogleSignIn get _googleSignIn {
-    return GoogleSignIn(
-      clientId: _clientId,
-      scopes: ['email', 'profile'],
-    );
+    if (kIsWeb) {
+      return GoogleSignIn(
+        clientId: _webClientId,
+        scopes: ['email', 'profile', 'openid'],
+        signInOption: SignInOption.standard,
+      );
+    } else {
+      // ✅ CRITICAL FIX: Add serverClientId for Android
+      return GoogleSignIn(
+        clientId: _androidClientId,
+        serverClientId: _webClientId,  // 👈 THIS WAS MISSING - CAUSING ERROR 10
+        scopes: ['email', 'profile', 'openid'],
+      );
+    }
   }
 
-  // ✅ Main Sign-In Method - Works on all platforms
+  // ✅ Main Sign-In Method
   static Future<Map<String, dynamic>?> signInWithBackend() async {
     try {
-      print('🔐 Starting Simple Google Sign-In...');
+      print('🔐 Starting Google Sign-In...');
       print('📱 Platform: ${kIsWeb ? "Web" : "Mobile"}');
 
       final GoogleSignIn googleSignIn = _googleSignIn;
@@ -50,12 +60,11 @@ class GoogleSignInServiceSimple {
       // Get authentication details
       final googleAuth = await googleUser.authentication;
 
-      // Use whatever tokens we get
       String? idToken = googleAuth.idToken;
       String? accessToken = googleAuth.accessToken;
 
-      print('🔑 ID Token available: ${idToken != null}');
-      print('🔑 Access Token available: ${accessToken != null}');
+      print('🔑 ID Token: ${idToken != null ? "✅ Available" : "❌ Missing"}');
+      print('🔑 Access Token: ${accessToken != null ? "✅ Available" : "❌ Missing"}');
 
       // For web, if no ID token, we'll use email-based auth
       // For mobile, we should get an ID token
