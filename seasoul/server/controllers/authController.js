@@ -118,7 +118,7 @@ exports.register = async (req, res) => {
     const user = new User({
       fullName,
       email,
-      phone: cleanPhone,
+      phone: cleanPhone || null,
       password,
     });
 

@@ -23,6 +23,22 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // ✅ Connect to MongoDB
 connectDB();
 
+// ✅ FIX: Migrate existing empty phone strings to null
+const User = require('../models/User');
+setTimeout(async () => {
+  try {
+    const result = await User.updateMany(
+      { phone: '' },
+      { $set: { phone: null } }
+    );
+    if (result.modifiedCount > 0) {
+      console.log(`✅ Migrated ${result.modifiedCount} users: phone '' → null`);
+    }
+  } catch (err) {
+    console.log('⚠️ Migration error:', err.message);
+  }
+}, 3000); // Wait 3 seconds for DB connection
+
 // ✅ Serve static assets
 app.use('/assets', express.static(path.join(__dirname, '../../assets')));
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));

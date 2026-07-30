@@ -18,14 +18,13 @@ const UserSchema = new mongoose.Schema(
     phone: {
       type: String,
       required: false,
-      default: '',
-      sparse: true,
+      default: null,        // ✅ FIX: null instead of ''
+      sparse: true,         // ✅ Now skips null values properly
     },
     password: {
       type: String,
       required: false,
       default: '',
-      // ✅ Remove minlength validation
     },
     profileImage: {
       type: String,
@@ -72,7 +71,6 @@ const UserSchema = new mongoose.Schema(
 
 // ✅ Only hash password if it exists and modified
 UserSchema.pre('save', async function() {
-  // ✅ Skip if password is empty or not modified
   if (!this.password || !this.isModified('password')) {
     return;
   }
@@ -81,7 +79,6 @@ UserSchema.pre('save', async function() {
 });
 
 UserSchema.methods.comparePassword = async function(enteredPassword) {
-  // ✅ If no password (Google user), return false
   if (!this.password) return false;
   return await bcrypt.compare(enteredPassword, this.password);
 };

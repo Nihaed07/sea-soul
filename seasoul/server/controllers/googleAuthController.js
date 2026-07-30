@@ -81,7 +81,7 @@ exports.googleLogin = async (req, res) => {
       user = new User({
         fullName: name || 'User',
         email: email,
-        phone: '',
+        phone: null,
         password: '', // No password for Google users
         profileImage: picture || '',
         bio: '',
@@ -196,7 +196,7 @@ exports.googleEmailAuth = async (req, res) => {
       user = new User({
         fullName: displayName || 'User',
         email: email,
-        phone: '',
+        phone: null,
         password: '',
         profileImage: photoUrl || '',
         bio: '',
@@ -313,7 +313,7 @@ exports.googleSimpleAuth = async (req, res) => {
       user = new User({
         fullName: name && name.trim() ? name.trim() : 'User',
         email: normalizedEmail,
-        phone: '',
+        phone: null,
         password: '',
         profileImage: photoUrl || '',
         bio: '',
