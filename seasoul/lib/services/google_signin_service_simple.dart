@@ -94,6 +94,7 @@ class GoogleSignInServiceSimple {
       );
 
       print('📥 Backend Response Status: ${response.statusCode}');
+      print('📥 Backend Response Body: ${response.body}');
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         final data = jsonDecode(response.body);

@@ -279,8 +279,6 @@ exports.googleSimpleAuth = async (req, res) => {
     console.log(`📧 Email: ${email}`);
     console.log(`👤 Name: ${name}`);
     console.log(`📱 Platform: ${platform}`);
-    console.log(`🔑 Has ID Token: ${!!idToken}`);
-    console.log(`🔑 Has Access Token: ${!!accessToken}`);
     console.log('========================================');
 
     if (!email || !googleId) {
@@ -298,15 +296,23 @@ exports.googleSimpleAuth = async (req, res) => {
       });
     }
 
-    // Find or create user
-    let user = await User.findOne({ email });
+    // ✅ FIX: Normalize email (lowercase)
+    const normalizedEmail = email.toLowerCase().trim();
+
+    // ✅ FIX: Try to find user by email OR googleId
+    let user = await User.findOne({ 
+      $or: [
+        { email: normalizedEmail },
+        { googleId: googleId }
+      ]
+    });
 
     if (!user) {
       console.log('📝 Creating new user...');
 
       user = new User({
-        fullName: name || 'User',
-        email: email,
+        fullName: name && name.trim() ? name.trim() : 'User',
+        email: normalizedEmail,
         phone: '',
         password: '',
         profileImage: photoUrl || '',
@@ -328,13 +334,25 @@ exports.googleSimpleAuth = async (req, res) => {
       }
 
     } else {
-      console.log('📝 Existing user found');
+      console.log('📝 Existing user found:', user.email);
 
-      // Update user info
+      // ✅ FIX: Update ALL fields properly, not just empty ones
       user.isGoogleUser = true;
-      if (!user.googleId) user.googleId = googleId;
-      if (!user.profileImage && photoUrl) user.profileImage = photoUrl;
-      if (name && !user.fullName) user.fullName = name;
+      
+      // Always update googleId if not set
+      if (!user.googleId) {
+        user.googleId = googleId;
+      }
+      
+      // ✅ FIX: Update name if provided and not empty
+      if (name && name.trim() && name.trim() !== 'User') {
+        user.fullName = name.trim();
+      }
+      
+      // ✅ FIX: Update photo if provided
+      if (photoUrl && photoUrl.trim()) {
+        user.profileImage = photoUrl.trim();
+      }
       
       await user.save();
       console.log('✅ User updated');
@@ -370,6 +388,16 @@ exports.googleSimpleAuth = async (req, res) => {
 
   } catch (error) {
     console.error('❌ Simple Google Auth error:', error);
+    
+    // ✅ FIX: Handle MongoDB duplicate key errors
+    if (error.code === 11000) {
+      return res.status(400).json({
+        success: false,
+        message: 'Account already exists with different credentials',
+        error: error.message
+      });
+    }
+    
     res.status(500).json({
       success: false,
       message: 'Authentication failed',
