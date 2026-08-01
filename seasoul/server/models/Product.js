@@ -22,7 +22,7 @@ const ProductSchema = new mongoose.Schema(
     category: {
       type: String,
       required: true,
-      enum: ['Resorts', 'Activities', 'Scuba', 'Honeymoon', 'Dining'],
+      // ✅ REMOVED enum - now accepts any category name
     },
     location: {
       type: String,
