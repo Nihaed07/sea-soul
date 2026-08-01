@@ -7,6 +7,7 @@ export default function BookingsList() {
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedBooking, setSelectedBooking] = useState(null);
 
   useEffect(() => {
     fetchBookings();
@@ -193,6 +194,11 @@ export default function BookingsList() {
                       <td className="px-6 py-4">
                         <p className="font-medium text-[#1A2B49]">{itemName}</p>
                         <p className="text-sm text-gray-500">{itemCategory}</p>
+                        {booking.checkIn && booking.checkOut && (
+                          <div className="text-xs text-cyan-600 font-semibold mt-1 bg-cyan-50/50 rounded px-1.5 py-0.5 inline-block border border-cyan-100">
+                            Slot: {new Date(booking.checkIn).toLocaleDateString('en-IN')} - {new Date(booking.checkOut).toLocaleDateString('en-IN')} ({Math.ceil((new Date(booking.checkOut) - new Date(booking.checkIn)) / (1000 * 60 * 60 * 24))} Days)
+                          </div>
+                        )}
                       </td>
                       <td className="px-6 py-4 font-bold text-[#1A2B49]">₹{booking.totalAmount}</td>
                       <td className="px-6 py-4">
@@ -210,7 +216,10 @@ export default function BookingsList() {
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-1">
-                          <button className="p-2 text-gray-400 hover:text-[#1A2B49] hover:bg-gray-100 rounded-lg transition">
+                          <button
+                            onClick={() => setSelectedBooking(booking)}
+                            className="p-2 text-gray-400 hover:text-[#1A2B49] hover:bg-gray-100 rounded-lg transition"
+                          >
                             <Eye size={17} />
                           </button>
                           {booking.status === 'pending' && (
@@ -273,6 +282,11 @@ export default function BookingsList() {
                     <div>
                       <p className="text-xs text-gray-400">Item</p>
                       <p className="font-medium text-[#1A2B49]">{itemName}</p>
+                      {booking.checkIn && booking.checkOut && (
+                        <p className="text-[11px] text-cyan-600 font-semibold mt-0.5">
+                          {new Date(booking.checkIn).toLocaleDateString('en-IN')} - {new Date(booking.checkOut).toLocaleDateString('en-IN')}
+                        </p>
+                      )}
                     </div>
                     <div>
                       <p className="text-xs text-gray-400">Amount</p>
@@ -289,7 +303,10 @@ export default function BookingsList() {
                       </p>
                     </div>
                     <div className="flex items-center gap-1">
-                      <button className="p-2 text-gray-400 hover:text-[#1A2B49] hover:bg-gray-100 rounded-lg transition">
+                      <button
+                        onClick={() => setSelectedBooking(booking)}
+                        className="p-2 text-gray-400 hover:text-[#1A2B49] hover:bg-gray-100 rounded-lg transition"
+                      >
                         <Eye size={17} />
                       </button>
                       {booking.status === 'pending' && (
@@ -315,6 +332,104 @@ export default function BookingsList() {
                 </div>
               );
             })}
+          </div>
+        </div>
+      )}
+
+      {/* Booking Detail Modal */}
+      {selectedBooking && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl overflow-y-auto max-h-[90vh]">
+            <div className="flex justify-between items-start border-b border-gray-100 pb-4 mb-4">
+              <div>
+                <h3 className="text-xl font-bold text-[#1A2B49]">Booking Details</h3>
+                <p className="text-sm font-mono text-gray-400 mt-1">Ref: {selectedBooking.bookingReference}</p>
+              </div>
+              <button
+                onClick={() => setSelectedBooking(null)}
+                className="p-1 rounded-lg text-gray-400 hover:text-gray-650 hover:bg-gray-50 transition"
+              >
+                <XCircle size={22} />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              {/* Customer Info */}
+              <div className="bg-gray-50 rounded-xl p-4">
+                <h4 className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-2">Customer Information</h4>
+                <p className="font-semibold text-gray-800">{selectedBooking.userId?.fullName || selectedBooking.user?.fullName || 'Unknown Customer'}</p>
+                <p className="text-sm text-gray-600">{selectedBooking.userId?.email || selectedBooking.user?.email || 'N/A'}</p>
+                <p className="text-sm text-gray-600">{selectedBooking.userId?.phone || selectedBooking.user?.phone || 'N/A'}</p>
+              </div>
+
+              {/* Package/Activity Info */}
+              <div className="bg-gray-50 rounded-xl p-4">
+                <h4 className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-2">Item Information</h4>
+                <p className="font-semibold text-gray-800">{selectedBooking.productId?.name || selectedBooking.activityId?.name || 'Unknown Item'}</p>
+                <p className="text-sm text-gray-600 capitalize">Type: {selectedBooking.itemType || 'Product'}</p>
+                <p className="text-sm text-gray-600">Guests: {selectedBooking.guests || 1}</p>
+              </div>
+
+              {/* Booking Dates (Slot) Info */}
+              {selectedBooking.checkIn && selectedBooking.checkOut && (
+                <div className="bg-cyan-50/50 border border-cyan-100 rounded-xl p-4">
+                  <h4 className="text-xs font-semibold uppercase tracking-wider text-cyan-700 mb-2">Selected Booking Dates (Slot)</h4>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-xs text-cyan-600">Check-In Date & Time</p>
+                      <p className="text-sm font-bold text-cyan-900 mt-0.5">
+                        {new Date(selectedBooking.checkIn).toLocaleDateString('en-IN', {
+                          day: '2-digit',
+                          month: 'short',
+                          year: 'numeric'
+                        })} (2:00 PM)
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-cyan-600">Check-Out Date & Time</p>
+                      <p className="text-sm font-bold text-cyan-900 mt-0.5">
+                        {new Date(selectedBooking.checkOut).toLocaleDateString('en-IN', {
+                          day: '2-digit',
+                          month: 'short',
+                          year: 'numeric'
+                        })} (11:00 AM)
+                      </p>
+                    </div>
+                  </div>
+                  <div className="mt-3 pt-2.5 border-t border-cyan-100/50 flex justify-between text-sm font-semibold text-cyan-850">
+                    <span>Number of Days:</span>
+                    <span className="font-bold">
+                      {Math.ceil((new Date(selectedBooking.checkOut) - new Date(selectedBooking.checkIn)) / (1000 * 60 * 60 * 24))} Days
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Status & Pricing */}
+              <div className="bg-gray-50 rounded-xl p-4 flex justify-between items-center">
+                <div>
+                  <h4 className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1">Payment Status</h4>
+                  <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium border capitalize ${
+                    selectedBooking.paymentStatus === 'paid' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-yellow-50 text-yellow-700 border-yellow-200'
+                  }`}>
+                    {selectedBooking.paymentStatus || 'Pending'}
+                  </span>
+                </div>
+                <div className="text-right">
+                  <h4 className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-0.5">Total Amount</h4>
+                  <p className="text-2xl font-bold text-[#1A2B49]">₹{selectedBooking.totalAmount}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6">
+              <button
+                onClick={() => setSelectedBooking(null)}
+                className="w-full px-4 py-2.5 bg-gray-100 text-gray-700 font-medium rounded-xl hover:bg-gray-200 transition"
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}

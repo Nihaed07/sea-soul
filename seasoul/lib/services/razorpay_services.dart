@@ -124,6 +124,8 @@ class RazorpayService {
     String? activityId,
     required double amount,
     required int guests,
+    String? checkIn,
+    String? checkOut,
   }) async {
     try {
       final token = await _getAuthToken();
@@ -142,6 +144,8 @@ class RazorpayService {
           if (activityId != null && activityId.isNotEmpty) 'activityId': activityId,
           'amount': amount,
           'guests': guests,
+          if (checkIn != null) 'checkIn': checkIn,
+          if (checkOut != null) 'checkOut': checkOut,
         }),
       );
 
