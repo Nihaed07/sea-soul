@@ -74,6 +74,11 @@ class _paymentState extends State<payment> {
     });
 
     try {
+      final checkInDate = widget.selectedDate ?? DateTime.now();
+      final checkOutDate = widget.selectedDate != null 
+          ? widget.selectedDate!.add(Duration(days: widget.duration))
+          : DateTime.now().add(Duration(days: widget.duration));
+
       // ✅ Verify payment on backend — backend will create booking after verification
       final verifyResponse = await RazorpayService.verifyPaymentWithBooking(
         orderId: response.orderId!,
@@ -83,6 +88,8 @@ class _paymentState extends State<payment> {
         activityId: widget.activityId,
         amount: widget.amount,
         guests: 1,
+        checkIn: checkInDate.toIso8601String(),
+        checkOut: checkOutDate.toIso8601String(),
       );
 
       if (verifyResponse['success'] == true) {
@@ -435,13 +442,15 @@ class _paymentState extends State<payment> {
             widget.itemType == 'product' ? 'Package' : 'Activity',
           ),
           const SizedBox(height: 12),
-          if (widget.selectedDate != null) ...[
-            _buildSummaryItemRow('Check-in Date', "${widget.selectedDate!.day.toString().padLeft(2, '0')}/${widget.selectedDate!.month.toString().padLeft(2, '0')}/${widget.selectedDate!.year} (2:00 PM)"),
-            const SizedBox(height: 12),
-            _buildSummaryItemRow('Check-out Date', "${widget.selectedDate!.add(Duration(days: widget.duration)).day.toString().padLeft(2, '0')}/${widget.selectedDate!.add(Duration(days: widget.duration)).month.toString().padLeft(2, '0')}/${widget.selectedDate!.add(Duration(days: widget.duration)).year} (11:00 AM)"),
-            const SizedBox(height: 12),
-          ],
-          _buildSummaryItemRow('Duration', "${widget.duration} Days"),
+          _buildSummaryItemRow('Check-in Date & Time', 
+              "${(widget.selectedDate ?? DateTime.now()).day.toString().padLeft(2, '0')}/${(widget.selectedDate ?? DateTime.now()).month.toString().padLeft(2, '0')}/${(widget.selectedDate ?? DateTime.now()).year} (2:00 PM)"),
+          const SizedBox(height: 12),
+          _buildSummaryItemRow('Check-out Date & Time', 
+              "${(widget.selectedDate != null ? widget.selectedDate!.add(Duration(days: widget.duration)) : DateTime.now().add(Duration(days: widget.duration))).day.toString().padLeft(2, '0')}/${(widget.selectedDate != null ? widget.selectedDate!.add(Duration(days: widget.duration)) : DateTime.now().add(Duration(days: widget.duration))).month.toString().padLeft(2, '0')}/${(widget.selectedDate != null ? widget.selectedDate!.add(Duration(days: widget.duration)) : DateTime.now().add(Duration(days: widget.duration))).year} (11:00 AM)"),
+          const SizedBox(height: 12),
+          _buildSummaryItemRow('Number of Days', "${widget.duration} Days"),
+          const SizedBox(height: 12),
+          _buildSummaryItemRow('Total Amount', "₹${widget.amount.toStringAsFixed(0)}"),
           const SizedBox(height: 12),
           _buildSummaryItemRow('Booking ID', shortBookingId),
           const Padding(
