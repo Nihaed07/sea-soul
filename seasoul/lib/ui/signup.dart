@@ -182,19 +182,36 @@ class _SignupPageState extends State<SignupPage> {
                                 ),
                               ),
                               const SizedBox(height: 40),
-                              // Google Sign‑In Button
-                              SizedBox(
+                              // ✅ Google Sign‑In Button - Styled like login.dart
+                              Container(
                                 width: double.infinity,
                                 height: 56,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(12),
+                                  color: const Color.fromARGB(255, 93, 157, 235),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: const Color.fromARGB(255, 251, 250, 250).withOpacity(0.2),
+                                      blurRadius: 10,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ],
+                                ),
                                 child: ElevatedButton.icon(
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: Colors.white,
                                     foregroundColor: Colors.black87,
+                                    shadowColor: Colors.transparent,
+                                    elevation: 0,
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(12),
                                     ),
-                                    elevation: 0,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 12,
+                                    ),
                                   ),
+                                  onPressed: _isLoading ? null : _signInWithGoogle,
                                   icon: Image.asset(
                                     'assets/google_logo.png',
                                     height: 24,
@@ -207,9 +224,9 @@ class _SignupPageState extends State<SignupPage> {
                                     style: GoogleFonts.montserrat(
                                       fontSize: 16,
                                       fontWeight: FontWeight.w600,
+                                      color: Colors.black87,
                                     ),
                                   ),
-                                  onPressed: _isLoading ? null : _signInWithGoogle,
                                 ),
                               ),
                               if (_isLoading) ...[

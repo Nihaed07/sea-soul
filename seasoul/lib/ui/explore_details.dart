@@ -11,6 +11,8 @@ class explore_details extends StatefulWidget {
 
 class _explore_detailsState extends State<explore_details> {
   bool _isBookmarked = false;
+  int _durationDays = 1;
+  DateTime _selectedDate = DateTime.now();
 
   static const Color deepNavy = Color(0xFF1A2B49);
   static const Color oceanBlue = Color(0xFF0099CC);
@@ -34,6 +36,7 @@ class _explore_detailsState extends State<explore_details> {
                 _buildDescriptionSection(),
                 _buildGallerySection(),
                 _buildActivitiesSection(),
+                _buildBookingOptions(),
                 const SizedBox(height: 140),
               ],
             ),
@@ -584,6 +587,127 @@ class _explore_detailsState extends State<explore_details> {
     );
   }
 
+  Widget _buildBookingOptions() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 36, 20, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Booking Details',
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              color: deepNavy,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: GestureDetector(
+                  onTap: () async {
+                    final DateTime? picked = await showDatePicker(
+                      context: context,
+                      initialDate: _selectedDate,
+                      firstDate: DateTime.now(),
+                      lastDate: DateTime.now().add(const Duration(days: 365)),
+                    );
+                    if (picked != null && picked != _selectedDate) {
+                      setState(() {
+                        _selectedDate = picked;
+                      });
+                    }
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.white.withOpacity(0.6)),
+                      boxShadow: [
+                        BoxShadow(
+                          color: deepNavy.withOpacity(0.03),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('Check-in Date', style: TextStyle(color: outline, fontSize: 12)),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            const Icon(Icons.calendar_today, size: 16, color: oceanBlue),
+                            const SizedBox(width: 8),
+                            Text(
+                              "${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}",
+                              style: const TextStyle(fontWeight: FontWeight.bold, color: deepNavy),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.white.withOpacity(0.6)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: deepNavy.withOpacity(0.03),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Duration', style: TextStyle(color: outline, fontSize: 12)),
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          GestureDetector(
+                            onTap: () {
+                              if (_durationDays > 1) {
+                                setState(() => _durationDays--);
+                              }
+                            },
+                            child: const Icon(Icons.remove_circle_outline, color: oceanBlue),
+                          ),
+                          Text(
+                            '$_durationDays Days',
+                            style: const TextStyle(fontWeight: FontWeight.bold, color: deepNavy),
+                          ),
+                          GestureDetector(
+                            onTap: () {
+                              setState(() => _durationDays++);
+                            },
+                            child: const Icon(Icons.add_circle_outline, color: oceanBlue),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildStickyBookingFooter() {
     return Positioned(
       bottom: 0,
@@ -629,17 +753,17 @@ class _explore_detailsState extends State<explore_details> {
                       ),
                     ),
                     RichText(
-                      text: const TextSpan(
-                        text: '₹12,500',
-                        style: TextStyle(
+                      text: TextSpan(
+                        text: '₹${(12500 * _durationDays).toStringAsFixed(0)}',
+                        style: const TextStyle(
                           fontSize: 26,
                           fontWeight: FontWeight.bold,
                           color: deepNavy,
                         ),
                         children: [
                           TextSpan(
-                            text: ' /person',
-                            style: TextStyle(
+                            text: ' / $_durationDays Days',
+                            style: const TextStyle(
                               fontSize: 13,
                               color: outline,
                               fontWeight: FontWeight.normal,
@@ -654,7 +778,15 @@ class _explore_detailsState extends State<explore_details> {
                   onPressed: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => payment()),
+                      MaterialPageRoute(
+                        builder: (context) => payment(
+                          amount: (12500 * _durationDays).toDouble(),
+                          itemName: 'Agatti Island',
+                          itemType: 'product',
+                          duration: _durationDays,
+                          selectedDate: _selectedDate,
+                        ),
+                      ),
                     );
                   },
                   icon: const Icon(Icons.bolt, color: Colors.white, size: 18),

@@ -16,6 +16,8 @@ class payment extends StatefulWidget {
   final double amount;
   final String? bookingId;
   final String itemImage;
+  final int duration;
+  final DateTime? selectedDate;
 
   const payment({
     super.key,
@@ -26,6 +28,8 @@ class payment extends StatefulWidget {
     this.amount = 0,
     this.bookingId,
     this.itemImage = '',
+    this.duration = 1,
+    this.selectedDate,
   });
 
   @override
@@ -430,6 +434,14 @@ class _paymentState extends State<payment> {
             'Type',
             widget.itemType == 'product' ? 'Package' : 'Activity',
           ),
+          const SizedBox(height: 12),
+          if (widget.selectedDate != null) ...[
+            _buildSummaryItemRow('Check-in Date', "${widget.selectedDate!.day.toString().padLeft(2, '0')}/${widget.selectedDate!.month.toString().padLeft(2, '0')}/${widget.selectedDate!.year} (2:00 PM)"),
+            const SizedBox(height: 12),
+            _buildSummaryItemRow('Check-out Date', "${widget.selectedDate!.add(Duration(days: widget.duration)).day.toString().padLeft(2, '0')}/${widget.selectedDate!.add(Duration(days: widget.duration)).month.toString().padLeft(2, '0')}/${widget.selectedDate!.add(Duration(days: widget.duration)).year} (11:00 AM)"),
+            const SizedBox(height: 12),
+          ],
+          _buildSummaryItemRow('Duration', "${widget.duration} Days"),
           const SizedBox(height: 12),
           _buildSummaryItemRow('Booking ID', shortBookingId),
           const Padding(
