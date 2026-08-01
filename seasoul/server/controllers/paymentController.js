@@ -234,6 +234,8 @@ exports.verifyRazorpayPayment = async (req, res) => {
       activityId,
       amount,
       guests = 1,
+      checkIn,
+      checkOut,
     } = req.body;
     const userId = req.user && req.user.id ? req.user.id : null;
 
@@ -323,8 +325,8 @@ exports.verifyRazorpayPayment = async (req, res) => {
         productId: productId || null,
         activityId: activityId || null,
         guests: guests || 1,
-        checkIn: new Date(),
-        checkOut: new Date(Date.now() + 86400000 * 3), // 3 days from now
+        checkIn: checkIn ? new Date(checkIn) : new Date(),
+        checkOut: checkOut ? new Date(checkOut) : new Date(Date.now() + 86400000 * 3), // 3 days from now
         totalAmount: amount || 0,
         status: 'confirmed', // ✅ Confirmed from the start
         paymentStatus: 'paid', // ✅ Paid from the start

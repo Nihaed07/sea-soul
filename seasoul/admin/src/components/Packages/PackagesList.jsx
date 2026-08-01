@@ -211,11 +211,8 @@ export default function PackagesList() {
 
                 <div className="mt-3 flex items-center gap-2 flex-wrap">
                   <span className="text-xl font-bold text-[#00E5FF]">
-                    ₹{pkg.price}
+                    ₹{pkg.price} / Day
                   </span>
-                  {pkg.duration && (
-                    <span className="text-xs text-gray-400">• {pkg.duration}</span>
-                  )}
                 </div>
 
                 <div className="mt-4 flex items-center gap-2 pt-3 border-t border-gray-100">

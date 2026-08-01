@@ -33,6 +33,11 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
   Map<String, dynamic>? _product;
   List<dynamic> _activities = [];
 
+  // Date selection state for package bookings
+  DateTime? _startDate;
+  DateTime? _endDate;
+  int _numberOfDays = 1;
+
   // ✅ Distance related variables
   double _distanceInKm = 0.0;
   String _distanceText = 'Loading...';
@@ -289,6 +294,43 @@ ${product['description'] ?? ''}
       );
     }
   }
+  }
+
+  Future<void> _selectBookingDates() async {
+    final DateTimeRange? picked = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+      initialDateRange: _startDate != null && _endDate != null
+          ? DateTimeRange(start: _startDate!, end: _endDate!)
+          : DateTimeRange(
+              start: DateTime.now(),
+              end: DateTime.now().add(const Duration(days: 1)),
+            ),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: oceanBlue,
+              onPrimary: Colors.white,
+              onSurface: deepNavy,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked != null) {
+      setState(() {
+        _startDate = picked.start;
+        _endDate = picked.end;
+        _numberOfDays = picked.duration.inDays;
+        if (_numberOfDays == 0) {
+          _numberOfDays = 1;
+        }
+      });
+    }
   }
 
   void _editReview(ReviewModel review) async {
@@ -799,42 +841,48 @@ ${product['description'] ?? ''}
             ),
           ),
           const SizedBox(height: 24),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: oceanBlue.withOpacity(0.05),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: oceanBlue.withOpacity(0.1)),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.calendar_today_outlined, color: oceanBlue),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'DURATION',
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                          color: outline,
-                          letterSpacing: 0.5,
+          GestureDetector(
+            onTap: _selectBookingDates,
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: oceanBlue.withOpacity(0.05),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: oceanBlue.withOpacity(0.1)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.calendar_today_outlined, color: oceanBlue),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'DAYS (TAP TO SELECT DATES)',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: outline,
+                            letterSpacing: 0.5,
+                          ),
                         ),
-                      ),
-                      Text(
-                        product['duration'] ?? '3 Nights / 4 Days',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: deepNavy,
+                        Text(
+                          _startDate != null && _endDate != null
+                              ? '$_numberOfDays Days (${_startDate!.day}/${_startDate!.month} - ${_endDate!.day}/${_endDate!.month})'
+                              : 'Select Booking Dates',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: deepNavy,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                  const Icon(Icons.arrow_drop_down, color: oceanBlue),
+                ],
+              ),
             ),
           ),
           const SizedBox(height: 12),
@@ -1316,6 +1364,8 @@ ${product['description'] ?? ''}
     final images = product['images'] ?? [];
     final imageUrl = images.isNotEmpty ? images[0] : '';
     final name = product['name'] ?? 'Package';
+    final hasSelectedDates = _startDate != null && _endDate != null;
+    final totalPrice = price * _numberOfDays;
 
     return Positioned(
       bottom: 0,
@@ -1351,7 +1401,7 @@ ${product['description'] ?? ''}
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      'STARTING FROM',
+                      hasSelectedDates ? 'TOTAL PRICE' : 'STARTING FROM',
                       style: TextStyle(
                         fontFamily: 'Inter',
                         fontSize: 10,
@@ -1362,16 +1412,16 @@ ${product['description'] ?? ''}
                     ),
                     RichText(
                       text: TextSpan(
-                        text: '₹$price',
+                        text: '₹${hasSelectedDates ? totalPrice : price}',
                         style: const TextStyle(
                           fontSize: 26,
                           fontWeight: FontWeight.bold,
                           color: deepNavy,
                         ),
-                        children: const [
+                        children: [
                           TextSpan(
-                            text: ' /person',
-                            style: TextStyle(
+                            text: hasSelectedDates ? ' /$_numberOfDays Days' : ' /Day',
+                            style: const TextStyle(
                               fontSize: 13,
                               color: outline,
                               fontWeight: FontWeight.normal,
@@ -1384,6 +1434,16 @@ ${product['description'] ?? ''}
                 ),
                 ElevatedButton.icon(
                   onPressed: () {
+                    if (!hasSelectedDates) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Please select booking dates first by tapping "DAYS" above.'),
+                          backgroundColor: Colors.orange,
+                          duration: Duration(seconds: 3),
+                        ),
+                      );
+                      return;
+                    }
                     Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -1391,8 +1451,10 @@ ${product['description'] ?? ''}
                           productId: product['_id'],
                           itemName: name,
                           itemType: 'product',
-                          amount: price.toDouble(),
+                          amount: totalPrice.toDouble(),
                           itemImage: imageUrl,
+                          duration: _numberOfDays,
+                          selectedDate: _startDate,
                         ),
                       ),
                     ).then((_) {
