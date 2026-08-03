@@ -26,9 +26,8 @@ export default function PackageForm() {
 
   const isEdit = !!id;
 
-  // ✅ Cloudinary configuration - Replace with your values
-  const CLOUDINARY_CLOUD_NAME = 'eeua8tfb'; // Your Cloudinary cloud name
-  const CLOUDINARY_UPLOAD_PRESET = 'seasoul_products'; // Your upload preset name
+  const CLOUDINARY_CLOUD_NAME = 'eeua8tfb';
+  const CLOUDINARY_UPLOAD_PRESET = 'seasoul_products';
 
   useEffect(() => {
     fetchCategories();
@@ -71,7 +70,6 @@ export default function PackageForm() {
     }
   };
 
-  // ✅ Compress image before upload (max 500KB)
   const compressImage = (file) => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -84,7 +82,6 @@ export default function PackageForm() {
           let width = img.width;
           let height = img.height;
           const maxDimension = 800;
-          
           if (width > height && width > maxDimension) {
             height = (height / width) * maxDimension;
             width = maxDimension;
@@ -92,16 +89,12 @@ export default function PackageForm() {
             width = (width / height) * maxDimension;
             height = maxDimension;
           }
-          
           canvas.width = width;
           canvas.height = height;
-          
           const ctx = canvas.getContext('2d');
           ctx.imageSmoothingEnabled = true;
           ctx.imageSmoothingQuality = 'high';
           ctx.drawImage(img, 0, 0, width, height);
-          
-          // ✅ Compress to JPEG with quality 0.7
           const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
           resolve(compressedDataUrl);
         };
@@ -111,15 +104,10 @@ export default function PackageForm() {
     });
   };
 
-  // ✅ Upload directly to Cloudinary from frontend
   const uploadToCloudinary = async (file) => {
     try {
-      console.log('📤 Uploading directly to Cloudinary...');
-      
-      // ✅ Compress image first
       let compressedBase64;
       if (file.size > 300 * 1024) {
-        console.log('📤 Compressing image...');
         compressedBase64 = await compressImage(file);
       } else {
         const reader = new FileReader();
@@ -129,29 +117,16 @@ export default function PackageForm() {
           reader.readAsDataURL(file);
         });
       }
-      
-      // ✅ Extract base64 data (remove data:image/jpeg;base64, prefix)
       const base64Data = compressedBase64.split(',')[1];
-      
-      // ✅ Create FormData for Cloudinary
       const formData = new FormData();
       formData.append('file', `data:image/jpeg;base64,${base64Data}`);
       formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
       formData.append('folder', 'seasoul/products');
-      
-      console.log('📤 Uploading to Cloudinary...');
-      
       const response = await fetch(
         `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
-        {
-          method: 'POST',
-          body: formData,
-        }
+        { method: 'POST', body: formData }
       );
-      
       const data = await response.json();
-      console.log('📥 Cloudinary Response:', data);
-      
       if (data.secure_url) {
         return data.secure_url;
       } else {
@@ -163,42 +138,29 @@ export default function PackageForm() {
     }
   };
 
-  // ✅ Handle image upload
   const handleImageUpload = async (e) => {
     const files = Array.from(e.target.files);
     if (files.length === 0) return;
-
     setUploading(true);
     setUploadProgress(0);
     const toastId = toast.loading('Uploading images...');
-
     const uploadedImages = [];
     let completed = 0;
-
     for (const file of files) {
       try {
-        console.log('📤 Processing file:', file.name, file.type, file.size);
-        
-        // ✅ Validate file type
         if (!file.type.startsWith('image/')) {
           toast.error(`File ${file.name} is not an image`);
           continue;
         }
-
-        // ✅ Upload to Cloudinary directly
         const url = await uploadToCloudinary(file);
         uploadedImages.push(url);
-        console.log('✅ Uploaded:', url);
-        
         completed++;
         setUploadProgress((completed / files.length) * 100);
-
       } catch (error) {
-        console.error('❌ Error uploading image:', error);
+        console.error('Error uploading image:', error);
         toast.error(`Failed to upload ${file.name}: ${error.message}`);
       }
     }
-
     setFormData((prev) => ({
       ...prev,
       images: [...prev.images, ...uploadedImages],
@@ -206,15 +168,10 @@ export default function PackageForm() {
     setUploading(false);
     setUploadProgress(0);
     e.target.value = '';
-
     if (uploadedImages.length > 0) {
-      toast.success(`${uploadedImages.length} image(s) uploaded successfully!`, {
-        id: toastId,
-      });
+      toast.success(`${uploadedImages.length} image(s) uploaded successfully!`, { id: toastId });
     } else {
-      toast.error('No images were uploaded', {
-        id: toastId,
-      });
+      toast.error('No images were uploaded', { id: toastId });
     }
   };
 
@@ -230,32 +187,21 @@ export default function PackageForm() {
     e.preventDefault();
     setLoading(true);
     const toastId = toast.loading(isEdit ? 'Updating package...' : 'Creating package...');
-
     try {
       const data = {
         ...formData,
         price: parseFloat(formData.price),
       };
-
       if (isEdit) {
         await api.put(`/admin/products/${id}`, data);
-        toast.success('Package updated successfully! 🎉', {
-          id: toastId,
-          duration: 3000,
-        });
+        toast.success('Package updated successfully! 🎉', { id: toastId, duration: 3000 });
       } else {
         await api.post('/admin/products', data);
-        toast.success('Package created successfully! 🎉', {
-          id: toastId,
-          duration: 3000,
-        });
+        toast.success('Package created successfully! 🎉', { id: toastId, duration: 3000 });
       }
       navigate('/packages');
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to save package', {
-        id: toastId,
-        duration: 4000,
-      });
+      toast.error(error.response?.data?.message || 'Failed to save package', { id: toastId, duration: 4000 });
     } finally {
       setLoading(false);
     }
@@ -274,10 +220,8 @@ export default function PackageForm() {
       <h1 className="text-2xl font-bold text-gray-800 mb-6">
         {isEdit ? 'Edit Package' : 'Add Package'}
       </h1>
-
       <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-sm p-4 sm:p-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Left Column */}
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Package Name *</label>
@@ -291,7 +235,6 @@ export default function PackageForm() {
                 placeholder="e.g., Luxury Beach Resort"
               />
             </div>
-
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Description *</label>
               <textarea
@@ -304,7 +247,6 @@ export default function PackageForm() {
                 placeholder="Describe your package in detail..."
               />
             </div>
-
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Price per Day (₹) *</label>
@@ -315,8 +257,11 @@ export default function PackageForm() {
                   onChange={handleChange}
                   className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#00E5FF] focus:border-[#00E5FF]"
                   required
-                  placeholder="0"
+                  placeholder="e.g. 5000"
                 />
+                <p className="text-xs text-gray-400 mt-1">
+                  This price will be multiplied by the number of days selected by the customer.
+                </p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Category *</label>
@@ -340,7 +285,6 @@ export default function PackageForm() {
                 </p>
               </div>
             </div>
-
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Location *</label>
               <input
@@ -353,7 +297,6 @@ export default function PackageForm() {
                 placeholder="e.g., Agatti Island"
               />
             </div>
-
             <div className="flex flex-wrap gap-6">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
@@ -377,18 +320,13 @@ export default function PackageForm() {
               </label>
             </div>
           </div>
-
-          {/* Right Column - Image Upload */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Package Images</label>
-            
             <div className="border-2 border-dashed border-gray-300 rounded-xl p-4 hover:border-[#00E5FF] transition">
               <label className="block cursor-pointer">
                 <div className="flex flex-col items-center justify-center py-4">
                   <Upload className="w-8 h-8 text-gray-400 mb-2" />
-                  <p className="text-sm text-gray-600 text-center">
-                    Click to upload images
-                  </p>
+                  <p className="text-sm text-gray-600 text-center">Click to upload images</p>
                   <p className="text-xs text-gray-400 mt-1 text-center">
                     PNG, JPG, JPEG, WEBP (Max 10MB each, will be compressed)
                   </p>
@@ -408,7 +346,6 @@ export default function PackageForm() {
                 </div>
               )}
             </div>
-
             {formData.images.length > 0 && (
               <div className="mt-4">
                 <p className="text-sm font-medium text-gray-700 mb-2">
@@ -439,7 +376,6 @@ export default function PackageForm() {
             )}
           </div>
         </div>
-
         <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t border-gray-200 mt-6">
           <button
             type="submit"

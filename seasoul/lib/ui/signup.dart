@@ -16,6 +16,11 @@ class SignupPage extends StatefulWidget {
 class _SignupPageState extends State<SignupPage> {
   bool _isLoading = false;
 
+  static const Color colorBackground = Color(0xFF0D1516);
+  static const Color colorPrimaryContainer = Color(0xFF00E5FF);
+  static const Color colorOnSurface = Color(0xFFDCE4E5);
+  static const Color colorOnSurfaceVariant = Color(0xFFBAC9CC);
+
   Future<void> _signInWithGoogle() async {
     if (_isLoading) return;
 
@@ -25,13 +30,11 @@ class _SignupPageState extends State<SignupPage> {
       final result = await GoogleSignInServiceSimple.signInWithBackend();
 
       if (result == null) {
-        // User cancelled
         setState(() => _isLoading = false);
         return;
       }
 
       if (result['success'] == true) {
-        // Successfully signed in and token saved
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -40,14 +43,12 @@ class _SignupPageState extends State<SignupPage> {
               duration: Duration(seconds: 2),
             ),
           );
-          // Navigate to user home
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (_) => const UserHome()),
           );
         }
       } else {
-        // Backend error
         final errorMsg = result['message'] ?? 'Google sign‑in failed.';
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -75,11 +76,6 @@ class _SignupPageState extends State<SignupPage> {
 
   @override
   Widget build(BuildContext context) {
-    const colorBackground = Color(0xFF0D1516);
-    const colorPrimaryContainer = Color(0xFF00E5FF);
-    const colorOnSurface = Color(0xFFDCE4E5);
-    const colorOnSurfaceVariant = Color(0xFFBAC9CC);
-
     return Scaffold(
       backgroundColor: colorBackground,
       body: Stack(
@@ -122,22 +118,55 @@ class _SignupPageState extends State<SignupPage> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     // Brand icon
-                    const Icon(
-                      Icons.sailing_rounded,
-                      size: 48,
-                      color: colorPrimaryContainer,
+                    Container(
+                      width: 80,
+                      height: 80,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: LinearGradient(
+                          colors: [
+                            colorPrimaryContainer,
+                            colorPrimaryContainer.withOpacity(0.5),
+                          ],
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: colorPrimaryContainer.withOpacity(0.3),
+                            blurRadius: 30,
+                            offset: const Offset(0, 10),
+                          ),
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.sailing_rounded,
+                        size: 40,
+                        color: colorBackground,
+                      ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 24),
                     // Brand name
                     Text(
                       'SeaSoul Holidays',
                       textAlign: TextAlign.center,
                       style: GoogleFonts.montserrat(
                         textStyle: const TextStyle(
-                          fontSize: 36,
+                          fontSize: 32,
                           fontWeight: FontWeight.w700,
                           color: colorPrimaryContainer,
                           letterSpacing: -0.02,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'LUXURIOUS ISLAND GETAWAYS',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.montserrat(
+                        textStyle: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          color: colorPrimaryContainer.withOpacity(0.6),
+                          letterSpacing: 2.0,
                         ),
                       ),
                     ),
@@ -153,7 +182,7 @@ class _SignupPageState extends State<SignupPage> {
                             color: Colors.white.withOpacity(0.03),
                             borderRadius: BorderRadius.circular(32),
                             border: Border.all(
-                              color: Colors.white.withOpacity(0.1),
+                              color: Colors.white.withOpacity(0.08),
                               width: 1,
                             ),
                           ),
@@ -164,7 +193,7 @@ class _SignupPageState extends State<SignupPage> {
                               Text(
                                 'Welcome Aboard',
                                 style: GoogleFonts.montserrat(
-                                  fontSize: 24,
+                                  fontSize: 22,
                                   fontWeight: FontWeight.w600,
                                   color: colorOnSurface,
                                 ),
@@ -178,57 +207,56 @@ class _SignupPageState extends State<SignupPage> {
                                   fontSize: 14,
                                   fontWeight: FontWeight.w400,
                                   color: colorOnSurfaceVariant,
-                                  height: 1.5,
+                                  height: 1.6,
                                 ),
                               ),
-                              const SizedBox(height: 40),
-                              // ✅ Google Sign‑In Button - Styled like login.dart
-                              Container(
+                              const SizedBox(height: 32),
+                              
+                              // ✅ Google Sign‑In Button - Brand color
+                              SizedBox(
                                 width: double.infinity,
                                 height: 56,
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(12),
-                                  color: const Color.fromARGB(255, 93, 157, 235),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: const Color.fromARGB(255, 251, 250, 250).withOpacity(0.2),
-                                      blurRadius: 10,
-                                      offset: const Offset(0, 4),
-                                    ),
-                                  ],
-                                ),
                                 child: ElevatedButton.icon(
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.white,
-                                    foregroundColor: Colors.black87,
-                                    shadowColor: Colors.transparent,
-                                    elevation: 0,
+                                    backgroundColor: colorPrimaryContainer,
+                                    foregroundColor: colorBackground,
+                                    shadowColor: colorPrimaryContainer.withOpacity(0.4),
+                                    elevation: 4,
                                     shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
+                                      borderRadius: BorderRadius.circular(14),
                                     ),
                                     padding: const EdgeInsets.symmetric(
-                                      horizontal: 16,
-                                      vertical: 12,
+                                      horizontal: 20,
+                                      vertical: 14,
                                     ),
                                   ),
                                   onPressed: _isLoading ? null : _signInWithGoogle,
-                                  icon: Image.asset(
-                                    'assets/google_logo.png',
-                                    height: 24,
+                                  icon: Container(
                                     width: 24,
-                                    errorBuilder: (_, __, ___) =>
-                                        const Icon(Icons.g_mobiledata, size: 24),
+                                    height: 24,
+                                    decoration: const BoxDecoration(
+                                      color: Colors.white,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Image.asset(
+                                      'assets/google_logo.png',
+                                      height: 18,
+                                      width: 18,
+                                      errorBuilder: (_, __, ___) =>
+                                          const Icon(Icons.g_mobiledata, size: 18, color: Colors.black87),
+                                    ),
                                   ),
                                   label: Text(
-                                    'Sign in with Google',
+                                    _isLoading ? 'Signing in...' : 'Sign in with Google',
                                     style: GoogleFonts.montserrat(
                                       fontSize: 16,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.black87,
+                                      fontWeight: FontWeight.w700,
+                                      color: colorBackground,
                                     ),
                                   ),
                                 ),
                               ),
+                              
                               if (_isLoading) ...[
                                 const SizedBox(height: 16),
                                 const CircularProgressIndicator(
@@ -236,14 +264,17 @@ class _SignupPageState extends State<SignupPage> {
                                   color: colorPrimaryContainer,
                                 ),
                               ],
-                              const SizedBox(height: 32),
+                              
+                              const SizedBox(height: 28),
+                              
                               // Divider
                               Container(
                                 padding: const EdgeInsets.only(top: 24),
                                 decoration: BoxDecoration(
                                   border: Border(
                                     top: BorderSide(
-                                      color: Colors.white.withOpacity(0.05),
+                                      color: Colors.white.withOpacity(0.06),
+                                      width: 1,
                                     ),
                                   ),
                                 ),
@@ -254,7 +285,8 @@ class _SignupPageState extends State<SignupPage> {
                                       'Already have an account?',
                                       style: GoogleFonts.montserrat(
                                         color: colorOnSurfaceVariant,
-                                        fontSize: 16,
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w400,
                                       ),
                                     ),
                                     TextButton(
@@ -266,16 +298,33 @@ class _SignupPageState extends State<SignupPage> {
                                           ),
                                         );
                                       },
+                                      style: TextButton.styleFrom(
+                                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                                      ),
                                       child: Text(
                                         'Sign In',
                                         style: GoogleFonts.montserrat(
                                           color: colorPrimaryContainer,
                                           fontWeight: FontWeight.w700,
-                                          fontSize: 16,
+                                          fontSize: 15,
                                         ),
                                       ),
                                     ),
                                   ],
+                                ),
+                              ),
+                              
+                              const SizedBox(height: 8),
+                              
+                              // Terms text
+                              Text(
+                                'By continuing, you agree to our Terms of Service\nand Privacy Policy',
+                                textAlign: TextAlign.center,
+                                style: GoogleFonts.montserrat(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w400,
+                                  color: colorOnSurfaceVariant.withOpacity(0.5),
+                                  height: 1.6,
                                 ),
                               ),
                             ],
@@ -283,8 +332,9 @@ class _SignupPageState extends State<SignupPage> {
                         ),
                       ),
                     ),
+                    
                     // Trust badges
-                    const SizedBox(height: 32),
+                    const SizedBox(height: 28),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -292,10 +342,15 @@ class _SignupPageState extends State<SignupPage> {
                           Icons.gpp_good_outlined,
                           'Secure Booking',
                         ),
-                        const SizedBox(width: 40),
+                        const SizedBox(width: 32),
                         _buildTrustBadge(
                           Icons.support_agent_outlined,
                           '24/7 Concierge',
+                        ),
+                        const SizedBox(width: 32),
+                        _buildTrustBadge(
+                          Icons.payment_outlined,
+                          'Easy Payments',
                         ),
                       ],
                     ),
@@ -312,17 +367,17 @@ class _SignupPageState extends State<SignupPage> {
   Widget _buildTrustBadge(IconData icon, String label) {
     return Opacity(
       opacity: 0.4,
-      child: Row(
+      child: Column(
         children: [
-          Icon(icon, size: 18, color: Colors.white),
-          const SizedBox(width: 8),
+          Icon(icon, size: 20, color: colorPrimaryContainer),
+          const SizedBox(height: 6),
           Text(
             label.toUpperCase(),
             style: GoogleFonts.montserrat(
-              fontSize: 12,
-              color: Colors.white,
+              fontSize: 8,
+              color: Colors.white.withOpacity(0.5),
               fontWeight: FontWeight.w700,
-              letterSpacing: 1.0,
+              letterSpacing: 0.8,
             ),
           ),
         ],
@@ -331,12 +386,12 @@ class _SignupPageState extends State<SignupPage> {
   }
 }
 
-// ✅ Wave Painter (unchanged)
+// ✅ Wave Painter
 class WavePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = const Color(0xFF00E5FF).withOpacity(0.3)
+      ..color = const Color(0xFF00E5FF).withOpacity(0.15)
       ..style = PaintingStyle.fill;
 
     final path = Path()
@@ -358,6 +413,31 @@ class WavePainter extends CustomPainter {
       ..close();
 
     canvas.drawPath(path, paint);
+    
+    // Second wave
+    final paint2 = Paint()
+      ..color = const Color(0xFF00E5FF).withOpacity(0.08)
+      ..style = PaintingStyle.fill;
+
+    final path2 = Path()
+      ..moveTo(0, size.height * 0.6)
+      ..quadraticBezierTo(
+        size.width * 0.3,
+        size.height * 0.8,
+        size.width * 0.6,
+        size.height * 0.55,
+      )
+      ..quadraticBezierTo(
+        size.width * 0.8,
+        size.height * 0.4,
+        size.width,
+        size.height * 0.65,
+      )
+      ..lineTo(size.width, size.height)
+      ..lineTo(0, size.height)
+      ..close();
+
+    canvas.drawPath(path2, paint2);
   }
 
   @override

@@ -5,9 +5,9 @@ import 'firebase_options.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:provider/provider.dart';
 import 'package:seasoul/providers/notification_provider.dart';
+import 'package:seasoul/providers/category_provider.dart'; // ✅ Add this import
 import 'package:seasoul/services/notification_service.dart';
 import 'package:seasoul/ui/splashscreen.dart';
-
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -23,6 +23,7 @@ void main() async {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => NotificationProvider()),
+        ChangeNotifierProvider(create: (_) => CategoryProvider()), // ✅ Add CategoryProvider
       ],
       child: const MyApp(),
     ),
@@ -40,8 +41,11 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         useMaterial3: true,
         fontFamily: 'Inter',
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF0099CC),
+        ),
       ),
-      home:  SplashScreen(),
+      home: const SplashScreen(),
     );
   }
 }

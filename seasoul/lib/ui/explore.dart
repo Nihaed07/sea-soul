@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:seasoul/services/product_service.dart';
 import 'package:seasoul/services/activity_service.dart';
 import 'package:seasoul/services/category_service.dart';
 import 'package:seasoul/ui/activity_details.dart';
 import 'package:seasoul/ui/product_details.dart';
-import 'package:seasoul/widgets/star_rating.dart';
 import 'package:seasoul/utils/image_utils.dart';
 
 class ExplorePage extends StatefulWidget {
-  const ExplorePage({super.key});
+  final String? initialCategory;
+
+  const ExplorePage({super.key, this.initialCategory});
 
   @override
   State<ExplorePage> createState() => _ExplorePageState();
@@ -17,12 +19,14 @@ class ExplorePage extends StatefulWidget {
 class _ExplorePageState extends State<ExplorePage> {
   int _activeCategoryIndex = 0;
   String _searchQuery = '';
-  List<dynamic> _allItems = []; // Combined list of products and activities
+  List<dynamic> _allItems = [];
+  List<dynamic> _filteredItems = [];
   bool _isLoading = true;
   bool _isLoadingCategories = true;
+  bool _isInitialFilterApplied = false;
 
-  // ✅ Categories from backend
-  List<String> _categories = ['All'];
+  // ✅ Categories from backend only
+  List<Map<String, dynamic>> _categories = [];
 
   static const Color deepNavy = Color(0xFF1A2B49);
   static const Color oceanBlue = Color(0xFF0099CC);
@@ -37,39 +41,91 @@ class _ExplorePageState extends State<ExplorePage> {
     _loadAllItems();
   }
 
+  // ✅ NEW: Handle when initialCategory changes from parent
+  @override
+  void didUpdateWidget(ExplorePage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    // Check if initialCategory changed and is not empty
+    if (widget.initialCategory != oldWidget.initialCategory &&
+        widget.initialCategory != null &&
+        widget.initialCategory!.isNotEmpty) {
+      print('🔍 didUpdateWidget: New category received: ${widget.initialCategory}');
+
+      // Wait for categories to load, then apply filter
+      if (!_isLoadingCategories && _categories.isNotEmpty) {
+        _applyCategoryFilter(widget.initialCategory!);
+      } else {
+        // If categories still loading, retry after a delay
+        Future.delayed(const Duration(milliseconds: 500), () {
+          if (mounted) {
+            _applyCategoryFilter(widget.initialCategory!);
+          }
+        });
+      }
+    }
+  }
+
   // ✅ Load categories from backend
   Future<void> _loadCategories() async {
     setState(() => _isLoadingCategories = true);
     try {
       final categories = await CategoryService.getCategories();
-      final categoryNames = categories.map((cat) => cat.name).toList();
       setState(() {
-        _categories = ['All', ...categoryNames];
+        _categories = [
+          {'id': 'all', 'name': 'All'},
+          ...categories.map((cat) => {
+            'id': cat.id,
+            'name': cat.name,
+            'color': cat.color,
+            'icon': cat.icon,
+          }),
+        ];
         _isLoadingCategories = false;
       });
-      print('✅ Loaded ${_categories.length} categories in explore');
+      print('✅ Loaded ${_categories.length} categories from backend');
+
+      // ✅ Apply initial category if provided (after categories loaded)
+      if (widget.initialCategory != null && 
+          widget.initialCategory!.isNotEmpty && 
+          !_isInitialFilterApplied) {
+        _applyCategoryFilter(widget.initialCategory!);
+        _isInitialFilterApplied = true;
+      }
     } catch (e) {
       print('❌ Error loading categories: $e');
-      _setFallbackCategories();
+      setState(() {
+        _categories = [
+          {'id': 'all', 'name': 'All'},
+        ];
+        _isLoadingCategories = false;
+      });
     }
   }
 
-  // ✅ Fallback categories
-  void _setFallbackCategories() {
-    setState(() {
-      _categories = [
-        'All',
-        'Premium Cottage Rooms',
-        'Cottage Rooms',
-        'Home Stay Rooms',
-        'Packages',
-        'Rent a Bike',
-        'Water Sports Activity',
-        'Lakshadweep Traditional Products',
-        'Event Program',
-      ];
-      _isLoadingCategories = false;
-    });
+  // ✅ Apply category filter
+  void _applyCategoryFilter(String categoryName) {
+    if (categoryName == 'All' || _categories.isEmpty) {
+      setState(() {
+        _activeCategoryIndex = 0;
+      });
+      _applyFilters();
+      return;
+    }
+
+    final index = _categories.indexWhere(
+      (cat) => cat['name'].toLowerCase() == categoryName.toLowerCase()
+    );
+
+    if (index != -1) {
+      setState(() {
+        _activeCategoryIndex = index;
+      });
+      _applyFilters();
+      print('✅ Applied filter for category: $categoryName');
+    } else {
+      print('⚠️ Category not found: $categoryName');
+    }
   }
 
   // ✅ Load both products and activities and combine them
@@ -99,42 +155,76 @@ class _ExplorePageState extends State<ExplorePage> {
         _allItems = combined;
         _isLoading = false;
       });
+
+      // Apply initial filter
+      _applyFilters();
     } catch (e) {
       setState(() => _isLoading = false);
       print('❌ Error loading items: $e');
     }
   }
 
-  List<dynamic> _getFilteredItems() {
-    if (_categories.isEmpty || _activeCategoryIndex >= _categories.length) {
-      return _allItems;
+  // ✅ Apply category and search filters
+  void _applyFilters() {
+    if (_categories.isEmpty) {
+      setState(() {
+        _filteredItems = _allItems;
+      });
+      return;
     }
 
-    final category = _categories[_activeCategoryIndex];
+    // Make sure _activeCategoryIndex is within bounds
+    if (_activeCategoryIndex >= _categories.length) {
+      setState(() {
+        _activeCategoryIndex = 0;
+      });
+      return;
+    }
 
-    return _allItems.where((item) {
-      // Category filter
-      if (category != 'All' && item['category'] != category) {
-        return false;
-      }
-      // Search filter
-      if (_searchQuery.isNotEmpty) {
-        final name = (item['name'] ?? '').toLowerCase();
-        final location = (item['location'] ?? '').toLowerCase();
-        final query = _searchQuery.toLowerCase();
-        if (!name.contains(query) && !location.contains(query)) {
-          return false;
+    final selectedCategory = _categories[_activeCategoryIndex];
+    final categoryName = selectedCategory['name'];
+
+    setState(() {
+      _filteredItems = _allItems.where((item) {
+        // Category filter
+        if (categoryName != 'All') {
+          final itemCategory = item['category'] ?? '';
+          if (itemCategory.toLowerCase() != categoryName.toLowerCase()) {
+            return false;
+          }
         }
-      }
-      return true;
-    }).toList();
+        // Search filter
+        if (_searchQuery.isNotEmpty) {
+          final name = (item['name'] ?? '').toLowerCase();
+          final location = (item['location'] ?? '').toLowerCase();
+          final query = _searchQuery.toLowerCase();
+          if (!name.contains(query) && !location.contains(query)) {
+            return false;
+          }
+        }
+        return true;
+      }).toList();
+    });
+
+    print('📊 Filtered items: ${_filteredItems.length} out of ${_allItems.length} for category: $categoryName');
+  }
+
+  void _handleSearch(String query) {
+    setState(() {
+      _searchQuery = query;
+    });
+    _applyFilters();
+  }
+
+  void _handleCategoryTap(int index) {
+    setState(() {
+      _activeCategoryIndex = index;
+    });
+    _applyFilters();
   }
 
   @override
   Widget build(BuildContext context) {
-    final filteredItems = _getFilteredItems();
-    final emptyMessage = 'No items found';
-
     if (_isLoadingCategories || _isLoading) {
       return Container(
         color: sandWhite,
@@ -143,6 +233,10 @@ class _ExplorePageState extends State<ExplorePage> {
         ),
       );
     }
+
+    final emptyMessage = _searchQuery.isNotEmpty 
+        ? 'No items found matching your search'
+        : 'No items available in this category';
 
     return Container(
       color: sandWhite,
@@ -176,6 +270,37 @@ class _ExplorePageState extends State<ExplorePage> {
                   const SizedBox(height: 16),
                   _buildSearchBar(),
                   const SizedBox(height: 12),
+                  // Show active filter indicator
+                  if (_activeCategoryIndex > 0 && _categories.isNotEmpty)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: oceanBlue.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.filter_alt, color: oceanBlue, size: 16),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Filtered by: ${_categories[_activeCategoryIndex]['name']}',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: oceanBlue,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          GestureDetector(
+                            onTap: () {
+                              _handleCategoryTap(0);
+                            },
+                            child: Icon(Icons.close, color: oceanBlue, size: 16),
+                          ),
+                        ],
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -187,9 +312,9 @@ class _ExplorePageState extends State<ExplorePage> {
             const SizedBox(height: 16),
             // Content
             Expanded(
-              child: filteredItems.isEmpty
+              child: _filteredItems.isEmpty
                   ? _buildEmptyState(emptyMessage)
-                  : _buildItemGrid(filteredItems),
+                  : _buildItemGrid(_filteredItems),
             ),
           ],
         ),
@@ -212,11 +337,7 @@ class _ExplorePageState extends State<ExplorePage> {
         ],
       ),
       child: TextField(
-        onChanged: (value) {
-          setState(() {
-            _searchQuery = value;
-          });
-        },
+        onChanged: _handleSearch,
         decoration: InputDecoration(
           prefixIcon: const Icon(Icons.search, color: outline),
           hintText: 'Search by name or location...',
@@ -234,9 +355,7 @@ class _ExplorePageState extends State<ExplorePage> {
               ? IconButton(
                   icon: const Icon(Icons.clear, color: outline, size: 18),
                   onPressed: () {
-                    setState(() {
-                      _searchQuery = '';
-                    });
+                    _handleSearch('');
                   },
                 )
               : null,
@@ -257,14 +376,22 @@ class _ExplorePageState extends State<ExplorePage> {
         itemCount: _categories.length,
         itemBuilder: (context, index) {
           final isSelected = _activeCategoryIndex == index;
+          final category = _categories[index];
+          final categoryName = category['name'] ?? '';
+
+          // Parse color if available
+          Color categoryColor = turquoiseLagoon;
+          try {
+            if (category['color'] != null) {
+              final hexColor = category['color'].toString().replaceFirst('#', '0xFF');
+              categoryColor = Color(int.parse(hexColor));
+            }
+          } catch (_) {}
+
           return Padding(
             padding: const EdgeInsets.only(right: 12.0),
             child: GestureDetector(
-              onTap: () {
-                setState(() {
-                  _activeCategoryIndex = index;
-                });
-              },
+              onTap: () => _handleCategoryTap(index),
               child: Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 20,
@@ -272,16 +399,16 @@ class _ExplorePageState extends State<ExplorePage> {
                 ),
                 decoration: BoxDecoration(
                   color: isSelected
-                      ? oceanBlue
-                      : turquoiseLagoon.withOpacity(0.1),
+                      ? categoryColor
+                      : categoryColor.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(999),
                   border: isSelected
                       ? null
-                      : Border.all(color: turquoiseLagoon.withOpacity(0.1)),
+                      : Border.all(color: categoryColor.withOpacity(0.2)),
                   boxShadow: isSelected
                       ? [
                           BoxShadow(
-                            color: oceanBlue.withOpacity(0.2),
+                            color: categoryColor.withOpacity(0.3),
                             blurRadius: 10,
                             offset: const Offset(0, 4),
                           ),
@@ -289,12 +416,12 @@ class _ExplorePageState extends State<ExplorePage> {
                       : null,
                 ),
                 child: Text(
-                  _categories[index],
+                  categoryName,
                   style: TextStyle(
                     fontFamily: 'Inter',
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    color: isSelected ? Colors.white : turquoiseLagoon,
+                    color: isSelected ? Colors.white : categoryColor,
                   ),
                 ),
               ),
@@ -322,7 +449,9 @@ class _ExplorePageState extends State<ExplorePage> {
           ),
           const SizedBox(height: 8),
           TextButton(
-            onPressed: _loadAllItems,
+            onPressed: () {
+              _loadAllItems();
+            },
             child: const Text('Retry'),
           ),
         ],
@@ -331,6 +460,10 @@ class _ExplorePageState extends State<ExplorePage> {
   }
 
   Widget _buildItemGrid(List<dynamic> items) {
+    if (items.isEmpty) {
+      return _buildEmptyState('No items found');
+    }
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20.0),
       child: GridView.builder(
@@ -353,7 +486,7 @@ class _ExplorePageState extends State<ExplorePage> {
           final itemName = item['name'] ?? 'Item';
           final itemTagline = item['location'] ?? 'Location';
           final itemPrice = item['price'] ?? 0;
-          final itemType = item['_type'] ?? 'product'; // 'product' or 'activity'
+          final itemType = item['_type'] ?? 'product';
 
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,

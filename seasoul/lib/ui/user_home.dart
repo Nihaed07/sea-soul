@@ -40,6 +40,7 @@ class _UserHomeState extends State<UserHome>
   bool get wantKeepAlive => true;
 
   int _currentTab = 0;
+  String _selectedCategoryForExplore = ''; // ✅ Store selected category
   String _selectedSort = 'popular';
   String _searchQuery = '';
   List<dynamic> _products = [];
@@ -147,7 +148,7 @@ class _UserHomeState extends State<UserHome>
     super.dispose();
   }
 
-  // ✅ Load categories from backend with fallback
+  // ✅ Load categories from backend
   Future<void> _loadCategories() async {
     setState(() => _isLoadingCategories = true);
     try {
@@ -157,111 +158,13 @@ class _UserHomeState extends State<UserHome>
         _isLoadingCategories = false;
       });
       print('✅ Loaded ${_categories.length} categories from backend');
-      // Debug: Print each category's icon
-      for (var cat in _categories) {
-        print('   Category: ${cat.name} | Icon: ${cat.icon} | Color: ${cat.color}');
-      }
     } catch (e) {
       print('❌ Error loading categories: $e');
-      _loadFallbackCategories();
+      setState(() {
+        _categories = [];
+        _isLoadingCategories = false;
+      });
     }
-  }
-
-  // ✅ Fallback categories with Material Icons (No Emojis)
-  void _loadFallbackCategories() {
-    setState(() {
-      _categories = [
-        CategoryModel(
-          id: '1',
-          name: 'Premium Cottage Rooms',
-          slug: 'premium-cottage-rooms',
-          description: '',
-          icon: 'home_work',
-          iconType: 'material',
-          color: '#2ECC71',
-          sortOrder: 1,
-          isActive: true,
-        ),
-        CategoryModel(
-          id: '2',
-          name: 'Cottage Rooms',
-          slug: 'cottage-rooms',
-          description: '',
-          icon: 'cottage',
-          iconType: 'material',
-          color: '#0099CC',
-          sortOrder: 2,
-          isActive: true,
-        ),
-        CategoryModel(
-          id: '3',
-          name: 'Home Stay Rooms',
-          slug: 'home-stay-rooms',
-          description: '',
-          icon: 'house',
-          iconType: 'material',
-          color: '#006B5C',
-          sortOrder: 3,
-          isActive: true,
-        ),
-        CategoryModel(
-          id: '4',
-          name: 'Packages',
-          slug: 'packages',
-          description: '',
-          icon: 'package',
-          iconType: 'material',
-          color: '#7F5300',
-          sortOrder: 4,
-          isActive: true,
-        ),
-        CategoryModel(
-          id: '5',
-          name: 'Rent a Bike',
-          slug: 'rent-a-bike',
-          description: '',
-          icon: 'directions_bike',
-          iconType: 'material',
-          color: '#BA1A1A',
-          sortOrder: 5,
-          isActive: true,
-        ),
-        CategoryModel(
-          id: '6',
-          name: 'Water Sports Activity',
-          slug: 'water-sports-activity',
-          description: '',
-          icon: 'scuba_diving',
-          iconType: 'material',
-          color: '#6E7880',
-          sortOrder: 6,
-          isActive: true,
-        ),
-        CategoryModel(
-          id: '7',
-          name: 'Lakshadweep Traditional Products',
-          slug: 'lakshadweep-traditional-products',
-          description: '',
-          icon: 'handmade',
-          iconType: 'material',
-          color: '#9E0FA9',
-          sortOrder: 7,
-          isActive: true,
-        ),
-        CategoryModel(
-          id: '8',
-          name: 'Event Program',
-          slug: 'event-program',
-          description: '',
-          icon: 'event',
-          iconType: 'material',
-          color: '#0FA924',
-          sortOrder: 8,
-          isActive: true,
-        ),
-      ];
-      _isLoadingCategories = false;
-    });
   }
 
   Future<void> _loadRecentReviews() async {
@@ -520,6 +423,15 @@ class _UserHomeState extends State<UserHome>
     });
   }
 
+  // ✅ FIXED: Navigate to category in Explore page with arguments
+  void _navigateToCategory(String categoryName) {
+    setState(() {
+      _selectedCategoryForExplore = categoryName;
+      _currentTab = 1; // Switch to Explore tab
+    });
+    print('🔍 Navigating to category: $categoryName');
+  }
+
   Future<void> openWhatsApp() async {
     final Uri whatsappUrl = Uri.parse(
       'https://wa.me/917558002853?text=Hello%20SeaSoul',
@@ -595,9 +507,15 @@ class _UserHomeState extends State<UserHome>
   Widget build(BuildContext context) {
     super.build(context);
 
+    // ✅ FIXED: Create pages with category argument + unique key for ExplorePage
+    // The key forces Flutter to rebuild ExplorePage when category changes
     final List<Widget> pages = [
       _buildHomeBody(),
-      const ExplorePage(),
+      // ✅ KEY FIX: Use ValueKey so ExplorePage rebuilds when category changes
+      ExplorePage(
+        key: ValueKey<String>('explore_$_selectedCategoryForExplore'),
+        initialCategory: _selectedCategoryForExplore,
+      ),
       _buildBookingsPlaceholder(),
       const WishlistPage(),
       const ProfilePage(),
@@ -955,7 +873,7 @@ class _UserHomeState extends State<UserHome>
     );
   }
 
-  // ✅ DYNAMIC CATEGORIES SECTION - Uses Material Icons (No Emojis)
+  // ✅ DYNAMIC CATEGORIES SECTION - Only from database
   Widget _buildCategoriesSection() {
     if (_isLoadingCategories) {
       return const SizedBox(
@@ -991,9 +909,8 @@ class _UserHomeState extends State<UserHome>
             padding: const EdgeInsets.only(right: 20.0),
             child: GestureDetector(
               onTap: () {
-                setState(() {
-                  _currentTab = 1;
-                });
+                // ✅ Navigate to Explore page with this category filter
+                _navigateToCategory(category.name);
               },
               child: Column(
                 children: [
@@ -1005,7 +922,7 @@ class _UserHomeState extends State<UserHome>
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: IconHelper.buildIcon(
-                      category.icon, // ✅ Uses icon name from backend
+                      category.icon,
                       size: 28,
                       color: color,
                     ),
@@ -1053,6 +970,7 @@ class _UserHomeState extends State<UserHome>
             TextButton(
               onPressed: () {
                 setState(() {
+                  _selectedCategoryForExplore = '';
                   _currentTab = 1;
                 });
               },
@@ -1352,6 +1270,7 @@ class _UserHomeState extends State<UserHome>
             TextButton(
               onPressed: () {
                 setState(() {
+                  _selectedCategoryForExplore = '';
                   _currentTab = 1;
                 });
               },
@@ -2029,6 +1948,7 @@ class _UserHomeState extends State<UserHome>
       buttonText: 'Explore Destinations',
       onButtonPressed: () {
         setState(() {
+          _selectedCategoryForExplore = '';
           _currentTab = 1;
         });
       },

@@ -16,11 +16,7 @@ import 'package:share_plus/share_plus.dart';
 
 class ProductDetailsPage extends StatefulWidget {
   final String productId;
-
-  const ProductDetailsPage({
-    super.key,
-    required this.productId,
-  });
+  const ProductDetailsPage({super.key, required this.productId});
 
   @override
   State<ProductDetailsPage> createState() => _ProductDetailsPageState();
@@ -33,18 +29,15 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
   Map<String, dynamic>? _product;
   List<dynamic> _activities = [];
 
-  // Date selection state for package bookings
   DateTime? _startDate;
   DateTime? _endDate;
   int _numberOfDays = 1;
 
-  // ✅ Distance related variables
   double _distanceInKm = 0.0;
   String _distanceText = 'Loading...';
   String _fromLocation = 'Your Location';
   bool _isDistanceLoading = true;
 
-  // ✅ Review related variables
   double _averageRating = 0.0;
   int _totalReviews = 0;
   bool _isLoadingReviews = true;
@@ -80,35 +73,26 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
 
   Future<void> _checkWishlistStatus() async {
     final inWishlist = await WishlistService.isInWishlist(widget.productId);
-    if (mounted) {
-      setState(() {
-        _isBookmarked = inWishlist;
-      });
-    }
+    if (mounted) setState(() => _isBookmarked = inWishlist);
   }
 
   Future<void> _loadProduct() async {
     setState(() => _isLoading = true);
     try {
       final response = await ProductService.getProductById(widget.productId);
-      if (response['success'] == true) {
-        if (mounted) {
-          setState(() {
-            _product = response['product'];
-            _isLoading = false;
-          });
-          _calculateDistance();
-        }
+      if (response['success'] == true && mounted) {
+        setState(() {
+          _product = response['product'];
+          _isLoading = false;
+        });
+        _calculateDistance();
       }
     } catch (e) {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+      if (mounted) setState(() => _isLoading = false);
       print('❌ Error loading product: $e');
     }
   }
 
-  // ✅ Load reviews and update rating
   Future<void> _loadReviews() async {
     setState(() => _isLoadingReviews = true);
     try {
@@ -117,14 +101,12 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
         itemType: 'product',
         limit: 10,
       );
-      
       if (response['success'] == true) {
         setState(() {
           _averageRating = (response['averageRating'] ?? 0).toDouble();
           _totalReviews = response['totalReviews'] ?? 0;
           _isLoadingReviews = false;
         });
-        print('✅ Loaded reviews: $_averageRating stars, $_totalReviews reviews');
       } else {
         setState(() {
           _averageRating = 0.0;
@@ -145,12 +127,10 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
   Future<void> _loadActivities() async {
     try {
       final response = await ActivityService.getActivities(limit: 3);
-      if (response['success'] == true) {
-        if (mounted) {
-          setState(() {
-            _activities = response['activities'] ?? [];
-          });
-        }
+      if (response['success'] == true && mounted) {
+        setState(() {
+          _activities = response['activities'] ?? [];
+        });
       }
     } catch (e) {
       print('❌ Error loading activities: $e');
@@ -159,46 +139,38 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
 
   Future<void> _calculateDistance() async {
     if (_product == null) return;
-    
-    final Map<String, dynamic> product = _product!;
-    String location = product['location'] ?? '';
+    final location = _product!['location'] ?? '';
     String islandKey = '';
-    
     for (var key in islandCoordinates.keys) {
       if (location.toLowerCase().contains(key.toLowerCase())) {
         islandKey = key;
         break;
       }
     }
-
-    if (islandKey.isEmpty) {
-      islandKey = 'Agatti';
-    }
-
+    if (islandKey.isEmpty) islandKey = 'Agatti';
     final destLat = islandCoordinates[islandKey]!['lat']!;
     final destLon = islandCoordinates[islandKey]!['lng']!;
-
     setState(() => _isDistanceLoading = true);
-
     try {
       final result = await LocationService.getDistanceToDestination(
         destLat: destLat,
         destLon: destLon,
         destName: islandKey,
       );
-
-      setState(() {
-        if (result['success'] == true) {
-          _distanceInKm = result['distance'] ?? 0;
-          _distanceText = result['formattedDistance'] ?? '--';
-          _fromLocation = result['fromLocation'] ?? 'Your Location';
-        } else {
-          _distanceText = '--';
-        }
-        _isDistanceLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          if (result['success'] == true) {
+            _distanceInKm = result['distance'] ?? 0;
+            _distanceText = result['formattedDistance'] ?? '--';
+            _fromLocation = result['fromLocation'] ?? 'Your Location';
+          } else {
+            _distanceText = '--';
+          }
+          _isDistanceLoading = false;
+        });
+      }
     } catch (e) {
-      setState(() {
+      if (mounted) setState(() {
         _distanceText = '--';
         _isDistanceLoading = false;
       });
@@ -208,7 +180,6 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
 
   Future<void> _saveToWishlist() async {
     setState(() => _isSaving = true);
-    
     try {
       if (_isBookmarked) {
         await WishlistService.removeFromWishlist(widget.productId);
@@ -218,11 +189,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
             _isSaving = false;
           });
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('❌ Removed from wishlist'),
-              backgroundColor: Colors.red,
-              duration: Duration(seconds: 2),
-            ),
+            const SnackBar(content: Text('❌ Removed from wishlist'), backgroundColor: Colors.red, duration: Duration(seconds: 2)),
           );
         }
       } else {
@@ -241,25 +208,16 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
             _isSaving = false;
           });
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('✅ Added to wishlist!'),
-              backgroundColor: Colors.green,
-              duration: Duration(seconds: 2),
-            ),
+            const SnackBar(content: Text('✅ Added to wishlist!'), backgroundColor: Colors.green, duration: Duration(seconds: 2)),
           );
         }
       }
     } catch (e) {
-      if (mounted) {
-        setState(() => _isSaving = false);
-      }
+      if (mounted) setState(() => _isSaving = false);
       print('❌ Error saving to wishlist: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text('Error: ${e.toString()}'), backgroundColor: Colors.red),
         );
       }
     }
@@ -267,7 +225,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
 
   Future<void> _shareProduct() async {
     final product = _product!;
-    final String shareText = '''
+    final shareText = '''
 🌊 SeaSoul - ${product['name'] ?? 'Amazing Package'}
 
 📍 Location: ${product['location'] ?? 'Lakshadweep'}
@@ -279,21 +237,17 @@ ${product['description'] ?? ''}
 
 ✨ Book now and experience the beauty of Lakshadweep!
 📱 Download SeaSoul App: https://seasoul.com/download
-  ''';
-  
-  try {
-    await Share.share(shareText);
-  } catch (e) {
-    print('❌ Error sharing: $e');
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error sharing: ${e.toString()}'),
-          backgroundColor: Colors.red,
-        ),
-      );
+''';
+    try {
+      await Share.share(shareText);
+    } catch (e) {
+      print('❌ Error sharing: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error sharing: ${e.toString()}'), backgroundColor: Colors.red),
+        );
+      }
     }
-  }
   }
 
   Future<void> _selectBookingDates() async {
@@ -303,10 +257,7 @@ ${product['description'] ?? ''}
       lastDate: DateTime.now().add(const Duration(days: 365)),
       initialDateRange: _startDate != null && _endDate != null
           ? DateTimeRange(start: _startDate!, end: _endDate!)
-          : DateTimeRange(
-              start: DateTime.now(),
-              end: DateTime.now().add(const Duration(days: 1)),
-            ),
+          : DateTimeRange(start: DateTime.now(), end: DateTime.now().add(const Duration(days: 1))),
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
@@ -320,15 +271,12 @@ ${product['description'] ?? ''}
         );
       },
     );
-
     if (picked != null) {
       setState(() {
         _startDate = picked.start;
         _endDate = picked.end;
         _numberOfDays = picked.duration.inDays;
-        if (_numberOfDays == 0) {
-          _numberOfDays = 1;
-        }
+        if (_numberOfDays == 0) _numberOfDays = 1;
       });
     }
   }
@@ -352,7 +300,6 @@ ${product['description'] ?? ''}
         ),
       ),
     );
-    
     if (result == true) {
       _loadReviews();
       _loadProduct();
@@ -366,48 +313,32 @@ ${product['description'] ?? ''}
         title: const Text('Delete Review'),
         content: const Text('Are you sure you want to delete this review?'),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
           TextButton(
             onPressed: () async {
               Navigator.pop(context);
               try {
                 await ReviewService.deleteReview(review.id);
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('✅ Review deleted'),
-                    backgroundColor: Colors.red,
-                    duration: Duration(seconds: 2),
-                  ),
+                  const SnackBar(content: Text('✅ Review deleted'), backgroundColor: Colors.red, duration: Duration(seconds: 2)),
                 );
                 _loadReviews();
                 _loadProduct();
               } catch (e) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Error: ${e.toString()}'),
-                    backgroundColor: Colors.red,
-                  ),
+                  SnackBar(content: Text('Error: ${e.toString()}'), backgroundColor: Colors.red),
                 );
               }
             },
-            child: const Text(
-              'Delete',
-              style: TextStyle(color: Colors.red),
-            ),
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
           ),
         ],
       ),
     );
   }
 
-  // ✅ Helper method to build network image with error handling
   Widget buildNetworkImage(String imageUrl, {double? height, double? width, BoxFit fit = BoxFit.cover}) {
     final cleanUrl = ImageUtils.getCleanImageUrl(imageUrl);
-    
-    // ✅ If URL is invalid, show placeholder
     if (!ImageUtils.isValidImage(cleanUrl)) {
       return Container(
         height: height,
@@ -416,13 +347,12 @@ ${product['description'] ?? ''}
         child: const Icon(Icons.broken_image, color: Colors.grey, size: 40),
       );
     }
-    
     return Image.network(
       cleanUrl,
       height: height,
       width: width,
       fit: fit,
-      loadingBuilder: (BuildContext context, Widget child, ImageChunkEvent? loadingProgress) {
+      loadingBuilder: (context, child, loadingProgress) {
         if (loadingProgress == null) return child;
         return Container(
           height: height,
@@ -438,23 +368,20 @@ ${product['description'] ?? ''}
           ),
         );
       },
-      errorBuilder: (BuildContext context, Object error, StackTrace? stackTrace) {
-        print('❌ Image error: $error');
-        print('❌ Image URL: $cleanUrl');
+      errorBuilder: (context, error, stackTrace) {
         return Container(
           height: height,
           width: width,
           color: Colors.grey[200],
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.broken_image, color: Colors.grey, size: 30),
-              const SizedBox(height: 4),
-              Text(
-                'Image not available',
-                style: TextStyle(color: Colors.grey[600], fontSize: 10),
-              ),
-            ],
+          child: const Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.broken_image, color: Colors.grey, size: 30),
+                SizedBox(height: 4),
+                Text('Image not available', style: TextStyle(color: Colors.grey, fontSize: 10)),
+              ],
+            ),
           ),
         );
       },
@@ -466,14 +393,9 @@ ${product['description'] ?? ''}
     if (_isLoading) {
       return Scaffold(
         backgroundColor: sandWhite,
-        body: const Center(
-          child: CircularProgressIndicator(
-            color: oceanBlue,
-          ),
-        ),
+        body: const Center(child: CircularProgressIndicator(color: oceanBlue)),
       );
     }
-
     if (_product == null) {
       return Scaffold(
         backgroundColor: sandWhite,
@@ -483,16 +405,11 @@ ${product['description'] ?? ''}
             children: [
               const Icon(Icons.error_outline, size: 64, color: outline),
               const SizedBox(height: 16),
-              const Text(
-                'Product not found',
-                style: TextStyle(fontSize: 18, color: deepNavy),
-              ),
+              const Text('Product not found', style: TextStyle(fontSize: 18, color: deepNavy)),
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: () => Navigator.pop(context),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: oceanBlue,
-                ),
+                style: ElevatedButton.styleFrom(backgroundColor: oceanBlue),
                 child: const Text('Go Back'),
               ),
             ],
@@ -503,8 +420,7 @@ ${product['description'] ?? ''}
 
     final product = _product!;
     final images = product['images'] ?? [];
-    final mainImage = images.isNotEmpty ? images[0] : 
-        'https://via.placeholder.com/400x300';
+    final mainImage = images.isNotEmpty ? images[0] : 'https://via.placeholder.com/400x300';
 
     return Scaffold(
       backgroundColor: sandWhite,
@@ -541,19 +457,11 @@ ${product['description'] ?? ''}
           filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
           child: Container(
             color: Colors.white.withOpacity(0.1),
-            padding: EdgeInsets.only(
-              top: MediaQuery.of(context).padding.top + 8,
-              left: 20,
-              right: 20,
-              bottom: 12,
-            ),
+            padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top + 8, left: 20, right: 20, bottom: 12),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _buildGlassButton(
-                  icon: Icons.arrow_back,
-                  onTap: () => Navigator.maybePop(context),
-                ),
+                _buildGlassButton(icon: Icons.arrow_back, onTap: () => Navigator.maybePop(context)),
                 Row(
                   children: [
                     _buildGlassButton(
@@ -563,10 +471,7 @@ ${product['description'] ?? ''}
                       isLoading: _isSaving,
                     ),
                     const SizedBox(width: 8),
-                    _buildGlassButton(
-                      icon: Icons.share_outlined,
-                      onTap: _shareProduct,
-                    ),
+                    _buildGlassButton(icon: Icons.share_outlined, onTap: _shareProduct),
                   ],
                 ),
               ],
@@ -577,12 +482,7 @@ ${product['description'] ?? ''}
     );
   }
 
-  Widget _buildGlassButton({
-    required IconData icon,
-    required VoidCallback onTap,
-    Color iconColor = deepNavy,
-    bool isLoading = false,
-  }) {
+  Widget _buildGlassButton({required IconData icon, required VoidCallback onTap, Color iconColor = deepNavy, bool isLoading = false}) {
     return GestureDetector(
       onTap: isLoading ? null : onTap,
       child: Container(
@@ -592,23 +492,10 @@ ${product['description'] ?? ''}
           color: Colors.white.withOpacity(0.7),
           borderRadius: BorderRadius.circular(14),
           border: Border.all(color: Colors.white.withOpacity(0.4)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2))],
         ),
         child: isLoading
-            ? const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: oceanBlue,
-                ),
-              )
+            ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: oceanBlue))
             : Icon(icon, color: iconColor, size: 22),
       ),
     );
@@ -620,11 +507,7 @@ ${product['description'] ?? ''}
         SizedBox(
           height: MediaQuery.of(context).size.height * 0.58,
           width: double.infinity,
-          child: buildNetworkImage(
-            imageUrl,
-            height: MediaQuery.of(context).size.height * 0.58,
-            width: double.infinity,
-          ),
+          child: buildNetworkImage(imageUrl, height: MediaQuery.of(context).size.height * 0.58, width: double.infinity),
         ),
         Positioned.fill(
           child: Container(
@@ -632,12 +515,7 @@ ${product['description'] ?? ''}
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [
-                  Colors.black.withOpacity(0.2),
-                  Colors.transparent,
-                  Colors.transparent,
-                  sandWhite,
-                ],
+                colors: [Colors.black.withOpacity(0.2), Colors.transparent, Colors.transparent, sandWhite],
                 stops: const [0.0, 0.2, 0.8, 1.0],
               ),
             ),
@@ -651,49 +529,19 @@ ${product['description'] ?? ''}
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 6,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                 decoration: BoxDecoration(
                   color: product['isFeatured'] == true ? sunsetOrange : oceanBlue,
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
                   product['isFeatured'] == true ? 'FEATURED' : 'TRENDING DESTINATION',
-                  style: const TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                    letterSpacing: 0.8,
-                  ),
+                  style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 0.8),
                 ),
               ),
               const SizedBox(height: 10),
-              Text(
-                product['name'] ?? 'Product',
-                style: const TextStyle(
-                  fontSize: 34,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                  shadows: [
-                    Shadow(
-                      color: Colors.black26,
-                      blurRadius: 8,
-                      offset: Offset(0, 2),
-                    ),
-                  ],
-                ),
-              ),
-              Text(
-                product['location'] ?? 'Location',
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white70,
-                ),
-              ),
+              Text(product['name'] ?? 'Product', style: const TextStyle(fontSize: 34, fontWeight: FontWeight.bold, color: Colors.white, shadows: [Shadow(color: Colors.black26, blurRadius: 8, offset: Offset(0, 2))])),
+              Text(product['location'] ?? 'Location', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w500, color: Colors.white70)),
             ],
           ),
         ),
@@ -710,13 +558,7 @@ ${product['description'] ?? ''}
           color: Colors.white.withOpacity(0.8),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(color: Colors.white.withOpacity(0.5)),
-          boxShadow: [
-            BoxShadow(
-              color: deepNavy.withOpacity(0.05),
-              blurRadius: 20,
-              offset: const Offset(0, 8),
-            ),
-          ],
+          boxShadow: [BoxShadow(color: deepNavy.withOpacity(0.05), blurRadius: 20, offset: const Offset(0, 8))],
         ),
         child: Row(
           children: [
@@ -724,47 +566,18 @@ ${product['description'] ?? ''}
               child: Column(
                 children: [
                   if (_isLoadingReviews)
-                    const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: oceanBlue,
-                      ),
-                    )
+                    const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: oceanBlue))
                   else
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        StarRating(
-                          rating: _averageRating,
-                          size: 18,
-                        ),
+                        StarRating(rating: _averageRating, size: 18),
                         const SizedBox(width: 6),
-                        Text(
-                          _averageRating > 0 
-                              ? _averageRating.toStringAsFixed(1)
-                              : '0.0',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: deepNavy,
-                          ),
-                        ),
+                        Text(_averageRating > 0 ? _averageRating.toStringAsFixed(1) : '0.0', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: deepNavy)),
                       ],
                     ),
                   const SizedBox(height: 2),
-                  Text(
-                    _totalReviews > 0 
-                        ? '$_totalReviews REVIEWS'
-                        : 'NO REVIEWS YET',
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: outline.withOpacity(0.8),
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 0.8,
-                    ),
-                  ),
+                  Text(_totalReviews > 0 ? '$_totalReviews REVIEWS' : 'NO REVIEWS YET', style: TextStyle(fontSize: 10, color: outline.withOpacity(0.8), fontWeight: FontWeight.bold, letterSpacing: 0.8)),
                 ],
               ),
             ),
@@ -778,35 +591,13 @@ ${product['description'] ?? ''}
                       const Icon(Icons.location_on_outlined, color: oceanBlue, size: 18),
                       const SizedBox(width: 4),
                       if (_isDistanceLoading)
-                        const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: oceanBlue,
-                          ),
-                        )
+                        const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: oceanBlue))
                       else
-                        Text(
-                          _distanceText,
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: deepNavy,
-                          ),
-                        ),
+                        Text(_distanceText, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: deepNavy)),
                     ],
                   ),
                   const SizedBox(height: 2),
-                  Text(
-                    'FROM ${_fromLocation.toUpperCase()}',
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: outline.withOpacity(0.8),
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 0.8,
-                    ),
-                  ),
+                  Text('FROM ${_fromLocation.toUpperCase()}', style: TextStyle(fontSize: 10, color: outline.withOpacity(0.8), fontWeight: FontWeight.bold, letterSpacing: 0.8)),
                 ],
               ),
             ),
@@ -817,107 +608,121 @@ ${product['description'] ?? ''}
   }
 
   Widget _buildDescriptionSection(Map<String, dynamic> product) {
+    final price = (product['price'] ?? 0).toDouble();
+    final totalPrice = _startDate != null && _endDate != null ? price * _numberOfDays : price;
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 32, 20, 0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            product['name'] ?? 'Experience Serenity',
-            style: const TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-              color: deepNavy,
-            ),
-          ),
+          Text(product['name'] ?? 'Experience Serenity', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: deepNavy)),
           const SizedBox(height: 10),
-          Text(
-            product['description'] ?? 'No description available',
-            style: const TextStyle(
-              fontFamily: 'Inter',
-              fontSize: 15,
-              color: outline,
-              height: 1.6,
-            ),
-          ),
+          Text(product['description'] ?? 'No description available', style: const TextStyle(fontFamily: 'Inter', fontSize: 15, color: outline, height: 1.6)),
           const SizedBox(height: 24),
-          GestureDetector(
-            onTap: _selectBookingDates,
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: oceanBlue.withOpacity(0.05),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: oceanBlue.withOpacity(0.1)),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.calendar_today_outlined, color: oceanBlue),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+
+          // ---- ENHANCED DATE SELECTION CARD ----
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 300),
+            decoration: BoxDecoration(
+              color: oceanBlue.withOpacity(0.06),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: _startDate != null ? oceanBlue : Colors.grey.shade200, width: 1.5),
+            ),
+            child: InkWell(
+              onTap: _selectBookingDates,
+              borderRadius: BorderRadius.circular(20),
+              child: Padding(
+                padding: const EdgeInsets.all(18.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
                       children: [
-                        const Text(
-                          'DAYS (TAP TO SELECT DATES)',
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                            color: outline,
-                            letterSpacing: 0.5,
+                        Icon(Icons.calendar_today, color: _startDate != null ? oceanBlue : Colors.grey[400], size: 22),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                _startDate != null
+                                    ? '${_startDate!.day}/${_startDate!.month}/${_startDate!.year} - ${_endDate!.day}/${_endDate!.month}/${_endDate!.year}'
+                                    : 'Select your travel dates',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: _startDate != null ? deepNavy : Colors.grey[600],
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                _startDate != null
+                                    ? '$_numberOfDays ${_numberOfDays == 1 ? 'day' : 'days'} • ₹${totalPrice.toInt()} total'
+                                    : 'Tap to choose check‑in and check‑out',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: _startDate != null ? oceanBlue : Colors.grey[500],
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                        Text(
-                          _startDate != null && _endDate != null
-                              ? '$_numberOfDays Days (${_startDate!.day}/${_startDate!.month} - ${_endDate!.day}/${_endDate!.month})'
-                              : 'Select Booking Dates',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: deepNavy,
-                          ),
-                        ),
+                        Icon(Icons.arrow_forward_ios, color: _startDate != null ? oceanBlue : Colors.grey[400], size: 16),
                       ],
                     ),
-                  ),
-                  const Icon(Icons.arrow_drop_down, color: oceanBlue),
-                ],
+                    if (_startDate != null) ...[
+                      const SizedBox(height: 14),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.7),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.currency_rupee, color: sunsetOrange, size: 20),
+                            const SizedBox(width: 8),
+                            Text('Total: ₹${totalPrice.toInt()}', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: deepNavy)),
+                            const Spacer(),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: oceanBlue.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Text('$_numberOfDays Days', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: oceanBlue)),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
               ),
             ),
           ),
           const SizedBox(height: 12),
+
+          // ---- PRICE PER DAY CARD ----
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: sunsetOrange.withOpacity(0.05),
+              color: sunsetOrange.withOpacity(0.08),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: sunsetOrange.withOpacity(0.1)),
+              border: Border.all(color: sunsetOrange.withOpacity(0.2)),
             ),
             child: Row(
               children: [
-                const Icon(Icons.currency_rupee, color: sunsetOrange),
+                const Icon(Icons.info_outline, color: sunsetOrange),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'PRICE',
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                          color: outline,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                      Text(
-                        '₹${product['price'] ?? 0} / person',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: deepNavy,
-                        ),
-                      ),
+                      const Text('PRICE PER DAY', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: outline, letterSpacing: 0.5)),
+                      Text('₹${price.toInt()} / person', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: deepNavy)),
                     ],
                   ),
                 ),
@@ -931,7 +736,6 @@ ${product['description'] ?? ''}
 
   Widget _buildGallerySection(List<dynamic> images) {
     if (images.isEmpty) return const SizedBox.shrink();
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -940,25 +744,10 @@ ${product['description'] ?? ''}
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Gallery',
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: deepNavy,
-                ),
-              ),
+              const Text('Gallery', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: deepNavy)),
               TextButton(
-                onPressed: () {
-                  _showGalleryDialog(images);
-                },
-                child: const Text(
-                  'View All',
-                  style: TextStyle(
-                    color: oceanBlue,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
+                onPressed: () => _showGalleryDialog(images),
+                child: const Text('View All', style: TextStyle(color: oceanBlue, fontWeight: FontWeight.w600)),
               ),
             ],
           ),
@@ -970,7 +759,7 @@ ${product['description'] ?? ''}
             padding: const EdgeInsets.symmetric(horizontal: 20),
             itemCount: images.length > 4 ? 4 : images.length,
             itemBuilder: (context, index) {
-              String imageUrl = images[index];
+              final imageUrl = images[index];
               return GestureDetector(
                 onTap: () => _showGalleryDialog(images, initialIndex: index),
                 child: Container(
@@ -978,11 +767,7 @@ ${product['description'] ?? ''}
                   margin: const EdgeInsets.only(right: 14),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(16),
-                    child: buildNetworkImage(
-                      imageUrl,
-                      height: 150,
-                      width: 220,
-                    ),
+                    child: buildNetworkImage(imageUrl, height: 150, width: 220),
                   ),
                 ),
               );
@@ -994,18 +779,14 @@ ${product['description'] ?? ''}
   }
 
   void _showGalleryDialog(List<dynamic> images, {int initialIndex = 0}) {
-    final PageController pageController = PageController(initialPage: initialIndex);
-
+    final pageController = PageController(initialPage: initialIndex);
     showDialog(
       context: context,
       builder: (context) => Dialog(
         backgroundColor: Colors.transparent,
         child: Container(
           height: MediaQuery.of(context).size.height * 0.8,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-          ),
+          decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20)),
           child: Column(
             children: [
               Padding(
@@ -1013,18 +794,8 @@ ${product['description'] ?? ''}
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
-                      'Gallery',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: deepNavy,
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.close, color: deepNavy),
-                      onPressed: () => Navigator.pop(context),
-                    ),
+                    const Text('Gallery', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: deepNavy)),
+                    IconButton(icon: const Icon(Icons.close, color: deepNavy), onPressed: () => Navigator.pop(context)),
                   ],
                 ),
               ),
@@ -1033,17 +804,12 @@ ${product['description'] ?? ''}
                   controller: pageController,
                   itemCount: images.length,
                   itemBuilder: (context, index) {
-                    String imageUrl = images[index];
+                    final imageUrl = images[index];
                     return Padding(
                       padding: const EdgeInsets.all(8.0),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(12),
-                        child: buildNetworkImage(
-                          imageUrl,
-                          height: double.infinity,
-                          width: double.infinity,
-                          fit: BoxFit.contain,
-                        ),
+                        child: buildNetworkImage(imageUrl, height: double.infinity, width: double.infinity, fit: BoxFit.contain),
                       ),
                     );
                   },
@@ -1054,18 +820,12 @@ ${product['description'] ?? ''}
                   padding: const EdgeInsets.all(16.0),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
-                    children: List.generate(
-                      images.length,
-                      (index) => Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 4),
-                        width: 8,
-                        height: 8,
-                        decoration: BoxDecoration(
-                          color: index == 0 ? oceanBlue : Colors.grey[300],
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                    ),
+                    children: List.generate(images.length, (index) => Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 4),
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(color: index == 0 ? oceanBlue : Colors.grey[300], shape: BoxShape.circle),
+                    )),
                   ),
                 ),
             ],
@@ -1075,14 +835,10 @@ ${product['description'] ?? ''}
     );
   }
 
-  // ==================== REVIEWS SECTION ====================
+  // ---- REVIEWS SECTION ----
   Widget _buildReviewsSection() {
     return FutureBuilder<Map<String, dynamic>>(
-      future: ReviewService.getItemReviews(
-        itemId: widget.productId,
-        itemType: 'product',
-        limit: 5,
-      ),
+      future: ReviewService.getItemReviews(itemId: widget.productId, itemType: 'product', limit: 5),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Padding(
@@ -1090,34 +846,21 @@ ${product['description'] ?? ''}
             child: Center(child: CircularProgressIndicator()),
           );
         }
-
         if (snapshot.hasError) {
           return Padding(
             padding: const EdgeInsets.all(20),
-            child: Center(
-              child: Text(
-                'Error loading reviews: ${snapshot.error}',
-                style: const TextStyle(color: Colors.red),
-              ),
-            ),
+            child: Center(child: Text('Error loading reviews: ${snapshot.error}', style: const TextStyle(color: Colors.red))),
           );
         }
-
         final data = snapshot.data;
-        if (data == null || data['success'] != true) {
-          return const SizedBox.shrink();
-        }
-
+        if (data == null || data['success'] != true) return const SizedBox.shrink();
         final reviewsList = data['reviews'] as List? ?? [];
-        
         final reviews = reviewsList
             .where((r) => r is Map<String, dynamic>)
             .map((r) => ReviewModel.fromJson(r as Map<String, dynamic>))
             .toList();
-
         final averageRating = data['averageRating'] ?? 0;
         final totalReviews = data['totalReviews'] ?? 0;
-
         if (_averageRating != averageRating || _totalReviews != totalReviews) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             setState(() {
@@ -1126,7 +869,6 @@ ${product['description'] ?? ''}
             });
           });
         }
-
         if (reviews.isEmpty) {
           return Padding(
             padding: const EdgeInsets.all(20),
@@ -1134,20 +876,13 @@ ${product['description'] ?? ''}
               children: [
                 const Icon(Icons.rate_review, size: 48, color: Colors.grey),
                 const SizedBox(height: 8),
-                const Text(
-                  'No reviews yet',
-                  style: TextStyle(fontSize: 16, color: Colors.grey),
-                ),
+                const Text('No reviews yet', style: TextStyle(fontSize: 16, color: Colors.grey)),
                 const SizedBox(height: 4),
-                Text(
-                  'Be the first to review this package!',
-                  style: TextStyle(fontSize: 14, color: Colors.grey[400]),
-                ),
+                Text('Be the first to review this package!', style: TextStyle(fontSize: 14, color: Colors.grey[400])),
               ],
             ),
           );
         }
-
         return Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
           child: Column(
@@ -1155,27 +890,11 @@ ${product['description'] ?? ''}
             children: [
               Row(
                 children: [
-                  const Text(
-                    'Reviews',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF1A2B49),
-                    ),
-                  ),
+                  const Text('Reviews', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: deepNavy)),
                   const Spacer(),
-                  StarRating(
-                    rating: averageRating,
-                    size: 18,
-                  ),
+                  StarRating(rating: averageRating, size: 18),
                   const SizedBox(width: 8),
-                  Text(
-                    '($totalReviews)',
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: Color(0xFF6E7880),
-                    ),
-                  ),
+                  Text('($totalReviews)', style: const TextStyle(fontSize: 14, color: outline)),
                 ],
               ),
               const SizedBox(height: 16),
@@ -1185,28 +904,17 @@ ${product['description'] ?? ''}
                   try {
                     await ReviewService.toggleHelpful(review.id);
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('✅ Marked as helpful'),
-                        backgroundColor: Colors.green,
-                        duration: Duration(seconds: 2),
-                      ),
+                      const SnackBar(content: Text('✅ Marked as helpful'), backgroundColor: Colors.green, duration: Duration(seconds: 2)),
                     );
                     _loadReviews();
                   } catch (e) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Error: ${e.toString()}'),
-                        backgroundColor: Colors.red,
-                      ),
+                      SnackBar(content: Text('Error: ${e.toString()}'), backgroundColor: Colors.red),
                     );
                   }
                 },
-                onEditTap: () {
-                  _editReview(review);
-                },
-                onDeleteTap: () {
-                  _deleteReview(review);
-                },
+                onEditTap: () => _editReview(review),
+                onDeleteTap: () => _deleteReview(review),
               )),
             ],
           ),
@@ -1215,25 +923,15 @@ ${product['description'] ?? ''}
     );
   }
 
-  // ==================== ACTIVITIES SECTION ====================
+  // ---- ACTIVITIES SECTION ----
   Widget _buildActivitiesSection() {
-    if (_activities.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
+    if (_activities.isEmpty) return const SizedBox.shrink();
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 36, 20, 0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Things to Do',
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-              color: deepNavy,
-            ),
-          ),
+          const Text('Things to Do', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: deepNavy)),
           const SizedBox(height: 16),
           ListView.builder(
             shrinkWrap: true,
@@ -1242,19 +940,10 @@ ${product['description'] ?? ''}
             itemBuilder: (context, index) {
               final activity = _activities[index];
               final images = activity['images'] ?? [];
-              final imageUrl = images.isNotEmpty ? images[0] : 
-                  'https://via.placeholder.com/300x200';
-              
+              final imageUrl = images.isNotEmpty ? images[0] : 'https://via.placeholder.com/300x200';
               return GestureDetector(
                 onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => ActivityDetailsPage(
-                        activityId: activity['_id'],
-                      ),
-                    ),
-                  );
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => ActivityDetailsPage(activityId: activity['_id'])));
                 },
                 child: Container(
                   margin: const EdgeInsets.only(bottom: 14),
@@ -1263,29 +952,17 @@ ${product['description'] ?? ''}
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(18),
                     border: Border.all(color: Colors.white.withOpacity(0.6)),
-                    boxShadow: [
-                      BoxShadow(
-                        color: deepNavy.withOpacity(0.03),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
+                    boxShadow: [BoxShadow(color: deepNavy.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4))],
                   ),
                   child: Row(
                     children: [
                       Container(
                         width: 72,
                         height: 72,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
+                        decoration: BoxDecoration(borderRadius: BorderRadius.circular(12)),
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(12),
-                          child: buildNetworkImage(
-                            imageUrl,
-                            height: 72,
-                            width: 72,
-                          ),
+                          child: buildNetworkImage(imageUrl, height: 72, width: 72),
                         ),
                       ),
                       const SizedBox(width: 16),
@@ -1293,55 +970,18 @@ ${product['description'] ?? ''}
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              activity['name'] ?? 'Activity',
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: deepNavy,
-                              ),
-                            ),
-                            Text(
-                              activity['description'] ?? '',
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                fontFamily: 'Inter',
-                                fontSize: 12,
-                                color: outline,
-                              ),
-                            ),
+                            Text(activity['name'] ?? 'Activity', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: deepNavy)),
+                            Text(activity['description'] ?? '', maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontFamily: 'Inter', fontSize: 12, color: outline)),
                             const SizedBox(height: 4),
                             Row(
                               children: [
-                                const Icon(
-                                  Icons.access_time,
-                                  size: 12,
-                                  color: outline,
-                                ),
+                                const Icon(Icons.access_time, size: 12, color: outline),
                                 const SizedBox(width: 4),
-                                Text(
-                                  activity['duration'] ?? '2 hours',
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    color: outline,
-                                  ),
-                                ),
+                                Text(activity['duration'] ?? '2 hours', style: const TextStyle(fontSize: 12, color: outline)),
                                 const SizedBox(width: 12),
-                                const Icon(
-                                  Icons.currency_rupee,
-                                  size: 12,
-                                  color: outline,
-                                ),
+                                const Icon(Icons.currency_rupee, size: 12, color: outline),
                                 const SizedBox(width: 4),
-                                Text(
-                                  '${activity['price'] ?? 0}',
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold,
-                                    color: oceanBlue,
-                                  ),
-                                ),
+                                Text('${activity['price'] ?? 0}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: oceanBlue)),
                               ],
                             ),
                           ],
@@ -1360,38 +1000,27 @@ ${product['description'] ?? ''}
   }
 
   Widget _buildStickyBookingFooter(Map<String, dynamic> product) {
-    final price = product['price'] ?? 0;
+    final price = (product['price'] ?? 0).toDouble();
     final images = product['images'] ?? [];
     final imageUrl = images.isNotEmpty ? images[0] : '';
     final name = product['name'] ?? 'Package';
     final hasSelectedDates = _startDate != null && _endDate != null;
-    final totalPrice = price * _numberOfDays;
+    final totalPrice = hasSelectedDates ? price * _numberOfDays : price;
 
     return Positioned(
       bottom: 0,
       left: 0,
       right: 0,
       child: ClipRRect(
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(24),
-          topRight: Radius.circular(24),
-        ),
+        borderRadius: const BorderRadius.only(topLeft: Radius.circular(24), topRight: Radius.circular(24)),
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
           child: Container(
             padding: const EdgeInsets.fromLTRB(24, 16, 24, 28),
             decoration: BoxDecoration(
               color: Colors.white.withOpacity(0.85),
-              border: Border(
-                top: BorderSide(color: Colors.white.withOpacity(0.3)),
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: deepNavy.withOpacity(0.08),
-                  blurRadius: 30,
-                  offset: const Offset(0, -4),
-                ),
-              ],
+              border: Border(top: BorderSide(color: Colors.white.withOpacity(0.3))),
+              boxShadow: [BoxShadow(color: deepNavy.withOpacity(0.08), blurRadius: 30, offset: const Offset(0, -4))],
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1402,30 +1031,16 @@ ${product['description'] ?? ''}
                   children: [
                     Text(
                       hasSelectedDates ? 'TOTAL PRICE' : 'STARTING FROM',
-                      style: TextStyle(
-                        fontFamily: 'Inter',
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                        color: outline.withOpacity(0.8),
-                        letterSpacing: 0.5,
-                      ),
+                      style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: outline.withOpacity(0.8), letterSpacing: 0.5),
                     ),
                     RichText(
                       text: TextSpan(
-                        text: '₹${hasSelectedDates ? totalPrice : price}',
-                        style: const TextStyle(
-                          fontSize: 26,
-                          fontWeight: FontWeight.bold,
-                          color: deepNavy,
-                        ),
+                        text: '₹${hasSelectedDates ? totalPrice.toInt() : price.toInt()}',
+                        style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: deepNavy),
                         children: [
                           TextSpan(
                             text: hasSelectedDates ? ' /$_numberOfDays Days' : ' /Day',
-                            style: const TextStyle(
-                              fontSize: 13,
-                              color: outline,
-                              fontWeight: FontWeight.normal,
-                            ),
+                            style: const TextStyle(fontSize: 13, color: outline, fontWeight: FontWeight.normal),
                           ),
                         ],
                       ),
@@ -1437,7 +1052,7 @@ ${product['description'] ?? ''}
                     if (!hasSelectedDates) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-                          content: Text('Please select booking dates first by tapping "DAYS" above.'),
+                          content: Text('Please select booking dates first by tapping the calendar above.'),
                           backgroundColor: Colors.orange,
                           duration: Duration(seconds: 3),
                         ),
@@ -1451,34 +1066,20 @@ ${product['description'] ?? ''}
                           productId: product['_id'],
                           itemName: name,
                           itemType: 'product',
-                          amount: totalPrice.toDouble(),
+                          amount: totalPrice,
                           itemImage: imageUrl,
                           duration: _numberOfDays,
                           selectedDate: _startDate,
                         ),
                       ),
-                    ).then((_) {
-                      _loadReviews();
-                    });
+                    ).then((_) => _loadReviews());
                   },
                   icon: const Icon(Icons.bolt, color: Colors.white, size: 18),
-                  label: const Text(
-                    'Book Experience',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 15,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                  label: const Text('Book Experience', style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold)),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF006386),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 16,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(999),
-                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
                     elevation: 0,
                   ),
                 ),

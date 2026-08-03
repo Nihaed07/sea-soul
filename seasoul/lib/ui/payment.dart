@@ -79,7 +79,6 @@ class _paymentState extends State<payment> {
           ? widget.selectedDate!.add(Duration(days: widget.duration))
           : DateTime.now().add(Duration(days: widget.duration));
 
-      // ✅ Verify payment on backend — backend will create booking after verification
       final verifyResponse = await RazorpayService.verifyPaymentWithBooking(
         orderId: response.orderId!,
         paymentId: response.paymentId!,
@@ -93,7 +92,6 @@ class _paymentState extends State<payment> {
       );
 
       if (verifyResponse['success'] == true) {
-        // Extract booking ID from verification response
         final bookingId = verifyResponse['booking']?['id'] ?? 
                          verifyResponse['booking']?['_id'];
         
@@ -103,7 +101,6 @@ class _paymentState extends State<payment> {
           _isProcessing = false;
         });
 
-        // Navigate to success screen
         if (mounted) {
           Navigator.pushReplacement(
             context,
@@ -121,9 +118,7 @@ class _paymentState extends State<payment> {
           );
         }
       } else {
-        _showErrorDialog(
-          'Payment verification failed. Please contact support.',
-        );
+        _showErrorDialog('Payment verification failed. Please contact support.');
         setState(() => _isProcessing = false);
       }
     } catch (e) {
@@ -171,17 +166,12 @@ class _paymentState extends State<payment> {
     });
 
     try {
-      // ✅ NEW FLOW: Don't create booking yet, just prepare payment
-      // Booking will be created on backend after successful payment
-      
-      // 1. Build receipt with timestamp (no bookingId needed)
       final timestamp = DateTime.now().millisecondsSinceEpoch;
       final rawReceipt = 'PAY_$timestamp';
       final receipt = rawReceipt.length > 40
           ? rawReceipt.substring(0, 40)
           : rawReceipt;
 
-      // 2. Create Razorpay order with item details in notes
       final orderResponse = await RazorpayService.createOrder(
         amount: widget.amount,
         receipt: receipt,
@@ -197,14 +187,10 @@ class _paymentState extends State<payment> {
       _razorpayOrderId = orderResponse['id'];
       print('✅ Razorpay order created: $_razorpayOrderId');
 
-      // 3. Get user details
       final user = await AuthService.getCurrentUser();
-
-      // 4. Get Razorpay key
       final keyId = await RazorpayService.getRazorpayKey();
       print('✅ Razorpay key obtained');
 
-      // 5. Open Razorpay checkout
       await RazorpayService.openCheckout(
         keyId: keyId,
         orderId: _razorpayOrderId!,
@@ -214,10 +200,8 @@ class _paymentState extends State<payment> {
         customerName: user?['fullName'] ?? user?['name'] ?? 'Customer',
         customerEmail: user?['email'] ?? 'customer@example.com',
         customerContact: user?['phone'] ?? '9999999999',
-        bookingId: null, // No booking ID yet
+        bookingId: null,
       );
-
-      // Success/Error handled in callbacks above
     } catch (e) {
       print('❌ Payment processing error: $e');
       setState(() {
@@ -337,6 +321,22 @@ class _paymentState extends State<payment> {
         ? '${displayBookingId.substring(0, 12)}...'
         : displayBookingId;
 
+    // Format dates
+    final checkInDate = widget.selectedDate ?? DateTime.now();
+    final checkOutDate = widget.selectedDate != null 
+        ? widget.selectedDate!.add(Duration(days: widget.duration))
+        : DateTime.now().add(Duration(days: widget.duration));
+
+    final String checkInFormatted = 
+        '${checkInDate.day.toString().padLeft(2, '0')}/'
+        '${checkInDate.month.toString().padLeft(2, '0')}/'
+        '${checkInDate.year} (2:00 PM)';
+    
+    final String checkOutFormatted = 
+        '${checkOutDate.day.toString().padLeft(2, '0')}/'
+        '${checkOutDate.month.toString().padLeft(2, '0')}/'
+        '${checkOutDate.year} (11:00 AM)';
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -354,6 +354,7 @@ class _paymentState extends State<payment> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Header
           const Row(
             children: [
               Icon(Icons.receipt_long_outlined, color: outline, size: 20),
@@ -369,6 +370,8 @@ class _paymentState extends State<payment> {
             ],
           ),
           const SizedBox(height: 20),
+          
+          // Item Image & Name
           Row(
             children: [
               Container(
@@ -431,32 +434,31 @@ class _paymentState extends State<payment> {
               ),
             ],
           ),
+          
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 16.0),
             child: Divider(color: Color(0xFFF1F3FF), thickness: 1),
           ),
-          _buildSummaryItemRow('Item', widget.itemName),
-          const SizedBox(height: 12),
-          _buildSummaryItemRow(
-            'Type',
-            widget.itemType == 'product' ? 'Package' : 'Activity',
-          ),
-          const SizedBox(height: 12),
-          _buildSummaryItemRow('Check-in Date & Time', 
-              "${(widget.selectedDate ?? DateTime.now()).day.toString().padLeft(2, '0')}/${(widget.selectedDate ?? DateTime.now()).month.toString().padLeft(2, '0')}/${(widget.selectedDate ?? DateTime.now()).year} (2:00 PM)"),
-          const SizedBox(height: 12),
-          _buildSummaryItemRow('Check-out Date & Time', 
-              "${(widget.selectedDate != null ? widget.selectedDate!.add(Duration(days: widget.duration)) : DateTime.now().add(Duration(days: widget.duration))).day.toString().padLeft(2, '0')}/${(widget.selectedDate != null ? widget.selectedDate!.add(Duration(days: widget.duration)) : DateTime.now().add(Duration(days: widget.duration))).month.toString().padLeft(2, '0')}/${(widget.selectedDate != null ? widget.selectedDate!.add(Duration(days: widget.duration)) : DateTime.now().add(Duration(days: widget.duration))).year} (11:00 AM)"),
-          const SizedBox(height: 12),
-          _buildSummaryItemRow('Number of Days', "${widget.duration} Days"),
-          const SizedBox(height: 12),
-          _buildSummaryItemRow('Total Amount', "₹${widget.amount.toStringAsFixed(0)}"),
-          const SizedBox(height: 12),
-          _buildSummaryItemRow('Booking ID', shortBookingId),
+          
+          // Details Grid - 2 columns
+          _buildDetailRow('Item', widget.itemName),
+          const SizedBox(height: 14),
+          _buildDetailRow('Type', widget.itemType == 'product' ? 'Package' : 'Activity'),
+          const SizedBox(height: 14),
+          _buildDetailRow('Check-in', checkInFormatted),
+          const SizedBox(height: 14),
+          _buildDetailRow('Check-out', checkOutFormatted),
+          const SizedBox(height: 14),
+          _buildDetailRow('Duration', '${widget.duration} ${widget.duration == 1 ? 'Day' : 'Days'}'),
+          const SizedBox(height: 14),
+          _buildDetailRow('Booking ID', shortBookingId),
+          
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 16.0),
             child: Divider(color: Color(0xFFE8EDFF), thickness: 1.5, height: 1),
           ),
+          
+          // Total Amount
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.end,
@@ -510,25 +512,33 @@ class _paymentState extends State<payment> {
     );
   }
 
-  Widget _buildSummaryItemRow(String label, String value) {
+  // Enhanced detail row with better alignment
+  Widget _buildDetailRow(String label, String value) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontFamily: 'Inter',
-            fontSize: 14,
-            color: outline,
+        SizedBox(
+          width: 100,
+          child: Text(
+            label,
+            style: TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 14,
+              color: outline,
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ),
-        Text(
-          value,
-          style: const TextStyle(
-            fontFamily: 'Inter',
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: deepNavy,
+        Expanded(
+          child: Text(
+            value,
+            style: TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: deepNavy,
+            ),
+            textAlign: TextAlign.right,
           ),
         ),
       ],
