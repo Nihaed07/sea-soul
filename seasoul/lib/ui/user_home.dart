@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:provider/provider.dart';
 
 import 'package:seasoul/ui/activity_details.dart';
@@ -434,14 +435,13 @@ class _UserHomeState extends State<UserHome>
 
   Future<void> openWhatsApp() async {
     final Uri whatsappUrl = Uri.parse(
-      'https://wa.me/917558002853?text=Hello%20SeaSoul',
+      'https://wa.me/+919656100143?text=Hello%20SeaSoul',
     );
     if (await canLaunchUrl(whatsappUrl)) {
       await launchUrl(whatsappUrl, mode: LaunchMode.externalApplication);
     }
   }
 
-  // Helper method to build network image with error handling
   Widget buildNetworkImage(
     String imageUrl, {
     double? height,
@@ -641,16 +641,13 @@ class _UserHomeState extends State<UserHome>
       body: IndexedStack(index: _currentTab, children: pages),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => chatbot()),
-          );
+          openWhatsApp();
         },
         backgroundColor: const Color(0xFF25D366).withOpacity(0.9),
         elevation: 6,
         shape: const CircleBorder(),
-        child: const Icon(
-          Icons.chat_bubble_outline,
+        child: const FaIcon(
+          FontAwesomeIcons.whatsapp,
           color: Colors.white,
           size: 26,
         ),
@@ -878,9 +875,7 @@ class _UserHomeState extends State<UserHome>
     if (_isLoadingCategories) {
       return const SizedBox(
         height: 110,
-        child: Center(
-          child: CircularProgressIndicator(color: oceanBlue),
-        ),
+        child: Center(child: CircularProgressIndicator(color: oceanBlue)),
       );
     }
 
@@ -895,7 +890,7 @@ class _UserHomeState extends State<UserHome>
         itemCount: _categories.length,
         itemBuilder: (context, index) {
           final category = _categories[index];
-          
+
           // Parse color from hex string
           Color color = oceanBlue;
           try {
