@@ -16,30 +16,33 @@ class Bottomnav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: const BorderRadius.only(
-        topLeft: Radius.circular(20),
-        topRight: Radius.circular(20),
-      ),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-          decoration: BoxDecoration(
-            color: const Color(0xFFF8FBFF).withOpacity(0.9),
-            border: Border(
-              top: BorderSide(color: Colors.white.withOpacity(0.2)),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 20),
+      child: ClipRRect(
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(20),
+          topRight: Radius.circular(20),
+        ),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF8FBFF).withOpacity(0.9),
+              border: Border(
+                top: BorderSide(color: Colors.white.withOpacity(0.2)),
+              ),
             ),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildNavItem(0, Icons.home_outlined, 'Home'),
-              _buildNavItem(1, Icons.explore_outlined, 'Explore'),
-              _buildNavItem(2, Icons.confirmation_number_outlined, 'Bookings'),
-              _buildNavItem(3, Icons.favorite_border, 'Wishlist'),
-              _buildNavItem(4, Icons.person_outline, 'Profile'),
-            ],
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildNavItem(0, Icons.home_outlined, 'Home'),
+                _buildNavItem(1, Icons.explore_outlined, 'Explore'),
+                _buildNavItem(2, Icons.confirmation_number_outlined, 'Bookings'),
+                _buildNavItem(3, Icons.favorite_border, 'Wishlist'),
+                _buildNavItem(4, Icons.person_outline, 'Profile'),
+              ],
+            ),
           ),
         ),
       ),
